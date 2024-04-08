@@ -54,13 +54,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <TargetExt>d.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
       <AdditionalLibraryDirectories>D:\git_RTS\tb002\third_party\Qwt\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>qwt.lib;qwtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>qwtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <AdditionalIncludeDirectories>D:\git_RTS\tb002\third_party\Qwt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -69,7 +70,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
       <AdditionalLibraryDirectories>D:\git_RTS\tb002\third_party\Qwt\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>qwt.lib;qwtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>qwt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <AdditionalIncludeDirectories>D:\git_RTS\tb002\third_party\Qwt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
