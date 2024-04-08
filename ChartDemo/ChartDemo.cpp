@@ -1,6 +1,6 @@
 ﻿#include "ChartDemo.h"
 
-#include "ChartManger.h"
+
 
 
 ChartDemo::ChartDemo(QWidget *parent)
@@ -24,7 +24,9 @@ void ChartDemo::init()
 	configLoader = new ConfigLoader(ui.tableWidget, this);
 	configLoader->loadConfig("F:/QwtChart_cpx/x64/Release/Event.json");
 
-	chartManager = new ChartManager(this, ui.Chartwidget);
+
+	QStringList curveNames = configLoader->getCurveNames(); // 获取曲线名称
+	chartManager = new ChartManager(this, ui.Chartwidget, curveNames);
 	chartManager->start();
 }
 

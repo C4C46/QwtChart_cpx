@@ -2,8 +2,8 @@
 
 #pragma execution_character_set("utf-8")
 
-ChartManager::ChartManager(QObject *parent, QWidget *parentWidget) 
-	: QObject(parent), m_widget(parentWidget) 
+ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QStringList &curveNames)
+	: QObject(parent), m_widget(parentWidget), curveNames(curveNames)
 {
 	plot = new QwtPlot(parentWidget);
 	plot->setTitle("实时趋势图");
@@ -30,11 +30,16 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget)
 	//addCurve("Curve2", Qt::red);
 
 		// 添加18条曲线
-	for (int i = 1; i <= 18; ++i) {
-		QColor color = QColor::fromHsv((i * 20) % 360, 255, 255); // 生成不同的颜色
-		addCurve(QString("Curve%1").arg(i), color);
-	}
+	//for (int i = 1; i <= 18; ++i) {
+	//	QColor color = QColor::fromHsv((i * 20) % 360, 255, 255); // 生成不同的颜色
+	//	addCurve(QString("Curve%1").arg(i), color);
+	//}
+	updaterThread = new ChartUpdaterThread(this, curveNames);
 
+	for (const QString &name : curveNames) {
+		QColor color = QColor::fromHsv(qrand() % 360, 255, 255); // 随机颜色
+		addCurve(name, color);
+	}
 
 	QVBoxLayout *layout = new QVBoxLayout(m_widget);
 	layout->addWidget(plot);
@@ -45,7 +50,7 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget)
 		m_widget->layout()->addWidget(plot);
 	}
 
-	updaterThread = new ChartUpdaterThread(this);
+	/*updaterThread = new ChartUpdaterThread(this);*/
 	//connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
 	//connect(updaterThread, &ChartUpdaterThread::updateChart, this, [this](int x, qreal y) {
 	//	onChartUpdate("Curve1", x, y);

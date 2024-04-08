@@ -1,7 +1,9 @@
 ﻿#include "ChartUpdaterThread.h"
 #include <QTime>
 
-ChartUpdaterThread::ChartUpdaterThread(QObject *parent) : QThread(parent) {
+ChartUpdaterThread::ChartUpdaterThread(QObject *parent, const QStringList &curveNames)
+	: QThread(parent), curveNames(curveNames)
+{
 	qsrand(QTime::currentTime().msec());
 }
 ChartUpdaterThread::~ChartUpdaterThread() {
@@ -23,21 +25,36 @@ ChartUpdaterThread::~ChartUpdaterThread() {
 //	}
 //}
 
+//void ChartUpdaterThread::run() {
+//	int x = 0;
+//	while (running) {
+//		qreal xIncrement = qrand() % 50 + 1; // 生成1到50之间的随机增量
+//		x += xIncrement; // x递增一个随机值
+//
+//		for (int i = 1; i <= 18; ++i) {
+//			qreal y = qrand() % 100; // 生成0到99之间的随机y值
+//			QString curveName = QString("Curve%1").arg(i);
+//			emit updateChart(curveName, x, y);
+//		}
+//
+//		QThread::sleep(1); // 模拟数据更新频率
+//	}
+//}
 void ChartUpdaterThread::run() {
 	int x = 0;
 	while (running) {
-		qreal xIncrement = qrand() % 50 + 1; // 生成1到50之间的随机增量
-		x += xIncrement; // x递增一个随机值
+		qreal xIncrement = qrand() % 50 + 1;
+		x += xIncrement;
 
-		for (int i = 1; i <= 18; ++i) {
-			qreal y = qrand() % 100; // 生成0到99之间的随机y值
-			QString curveName = QString("Curve%1").arg(i);
+		for (const QString &curveName : curveNames) {
+			qreal y = qrand() % 100;
 			emit updateChart(curveName, x, y);
 		}
 
-		QThread::sleep(1); // 模拟数据更新频率
+		QThread::sleep(1);
 	}
 }
+
 void ChartUpdaterThread::stopRunning() {
 
 	running = false;

@@ -14,6 +14,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QDoubleValidator>
+#include <QStringList>
 #include "CustomChartView.h" 
 #include "ChartUpdaterThread.h"
 #include <qwt_plot_magnifier.h>
@@ -23,7 +24,7 @@ class ChartManager : public QObject {
     Q_OBJECT
 
 public:
-    ChartManager(QObject *parent, QWidget*parentWidget =nullptr);
+    ChartManager(QObject *parent, QWidget*parentWidget, const QStringList &curveNames);
 	~ChartManager();
     void start();
 	QWidget* getWidget();
@@ -44,6 +45,6 @@ private:
 	double xInterval = 10; // 默认x间隔值
 	double yInterval = 10; // 默认y间隔值
 
-
+	QStringList curveNames; // 添加成员变量存储曲线名称
 };
 

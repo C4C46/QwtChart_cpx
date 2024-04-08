@@ -11,6 +11,9 @@ ConfigLoader::ConfigLoader(QTableWidget *tableWidget, QObject *parent)
 	m_tableWidget->setShowGrid(false);
 }
 
+QStringList ConfigLoader::getCurveNames() const {
+	return curveNames;
+}
 
 
 void ConfigLoader::loadConfig(const QString &filePath)
@@ -34,6 +37,11 @@ void ConfigLoader::loadConfig(const QString &filePath)
 		QJsonObject configObject = configArray[i].toObject();
 		QString name = configObject["name"].toString();
 		bool display = configObject["display"].toBool();
+
+		if (display) { // 只有当display为true时，才考虑这个曲线名称
+			curveNames.append(name); // 存储曲线名称
+		}
+
 
 		QCheckBox* checkBox = new QCheckBox();
 		checkBox->setChecked(display);

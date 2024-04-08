@@ -6,7 +6,7 @@ class ChartUpdaterThread : public QThread{
 	Q_OBJECT
 
 public:
-	ChartUpdaterThread(QObject *parent = nullptr);
+	ChartUpdaterThread(QObject *parent, const QStringList &curveNames);
 	~ChartUpdaterThread();
 	void run() override;
 
@@ -19,5 +19,8 @@ protected:
 public slots:
 	void stopRunning();
 
+
+private:
+	QStringList curveNames; // 存储曲线名称
 };
 
