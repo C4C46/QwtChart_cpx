@@ -2,6 +2,8 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_ChartDemo.h"
+#include "ChartManger.h"
+#include "ConfigLoader.h"
 
 class ChartDemo : public QMainWindow
 {
@@ -13,6 +15,11 @@ public:
 
 	void init();
 
+public slots:
+	void handleIntervalPBClicked();
+
 private:
     Ui::ChartDemoClass ui;
+	ChartManager *chartManager;
+	ConfigLoader *configLoader;
 };

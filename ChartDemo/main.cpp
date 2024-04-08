@@ -1,5 +1,5 @@
-#include "ChartDemo.h"
-#include <QtWidgets/QApplication>
+﻿#include "ChartDemo.h"
+#include <QApplication>
 
 int main(int argc, char *argv[])
 {

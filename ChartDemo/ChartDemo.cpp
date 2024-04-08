@@ -1,5 +1,5 @@
 ﻿#include "ChartDemo.h"
-#include "ConfigLoader.h"
+
 #include "ChartManger.h"
 
 
@@ -8,22 +8,29 @@ ChartDemo::ChartDemo(QWidget *parent)
 {
     ui.setupUi(this);
 	init();
+
+
+	connect(ui.Interval_PB, &QPushButton::clicked, this, &ChartDemo::handleIntervalPBClicked);
 }
 
 ChartDemo::~ChartDemo()
-{}
+{
+	configLoader->saveConfig("F:/ChartDemo/ChartDemo/x64/Release/Event.json");
+	delete chartManager;
+}
 
 void ChartDemo::init()
 {
-	ConfigLoader *configLoader = new ConfigLoader(ui.tableWidget, this);
-	configLoader->loadConfig("path/to/your/config.txt");
+	configLoader = new ConfigLoader(ui.tableWidget, this);
+	configLoader->loadConfig("F:/ChartDemo/ChartDemo/x64/Release/Event.json");
 
-	ChartManager *chartmanger = new ChartManager(this, ui.Chartwidget);
-	chartmanger->start();
-	QVBoxLayout *layout = new QVBoxLayout(ui.Chartwidget); // 创建一个新的垂直布局
-	layout->addWidget(chartmanger->getChartView()); // 将chartView添加到布局中
-	ui.Chartwidget->setLayout(layout); // 将布局设置给ui.Chartwidget
+	chartManager = new ChartManager(this, ui.Chartwidget);
+	chartManager->start();
 }
 
-
+void ChartDemo::handleIntervalPBClicked() {
+	if (chartManager) {
+		chartManager->onIntervalPBClicked();//用于显示间隔设置对话框
+	}
+}
 
