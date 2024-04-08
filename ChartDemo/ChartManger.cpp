@@ -10,8 +10,8 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget)
 	plot->setCanvasBackground(Qt::white);
 
 	// 设置X轴和Y轴的标题
-	plot->setAxisTitle(QwtPlot::xBottom, "X轴");
-	plot->setAxisTitle(QwtPlot::yLeft, "Y轴");
+	plot->setAxisTitle(QwtPlot::xBottom,"");
+	plot->setAxisTitle(QwtPlot::yLeft,"");
 
 	//// 设置X轴和Y轴的范围
 	//plot->setAxisScale(QwtPlot::xBottom, 0, 1400);
@@ -22,28 +22,23 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget)
 	grid->attach(plot); // 将网格附加到图表
 	grid->setVisible(false); // 隐藏网格线
 
-	// 创建曲线
-	curve = new QwtPlotCurve();
-	curve->setPen(Qt::blue, 2); // 设置曲线颜色和宽度
-	curve->attach(plot); // 将曲线附加到图表
+	//// 创建曲线
+	//curve = new QwtPlotCurve();
+	//curve->setPen(Qt::blue, 2); // 设置曲线颜色和宽度
+	//curve->attach(plot); // 将曲线附加到图表
+	//addCurve("Curve1", Qt::blue);
+	//addCurve("Curve2", Qt::red);
+
+		// 添加18条曲线
+	for (int i = 1; i <= 18; ++i) {
+		QColor color = QColor::fromHsv((i * 20) % 360, 255, 255); // 生成不同的颜色
+		addCurve(QString("Curve%1").arg(i), color);
+	}
+
 
 	QVBoxLayout *layout = new QVBoxLayout(m_widget);
 	layout->addWidget(plot);
 	m_widget->setLayout(layout);
-
-	////// 初始化缩放和平移功能
-	////QwtPlotZoomer* zoomer = new QwtPlotZoomer(plot->canvas());
-	////zoomer->setRubberBand(QwtPicker::NoRubberBand);
-	////zoomer->setRubberBandPen(QColor(Qt::black));
-	////zoomer->setTrackerMode(QwtPicker::ActiveOnly);
-	//QwtPlotPanner* panner = new QwtPlotPanner(plot->canvas());
-	//panner->setMouseButton(Qt::LeftButton);
-	//panner->setOrientations(Qt::Horizontal | Qt::Vertical);
-
-	//// 添加缩放功能
-	//CustomMagnifier* magnifier = new CustomMagnifier(plot->canvas());
-	//magnifier->setMouseButton(Qt::NoButton);
-	//magnifier->setWheelFactor(1.1); 
 
 	if (m_widget) {
 		m_widget->setLayout(new QVBoxLayout());
@@ -51,8 +46,12 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget)
 	}
 
 	updaterThread = new ChartUpdaterThread(this);
-	connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
+	//connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
+	//connect(updaterThread, &ChartUpdaterThread::updateChart, this, [this](int x, qreal y) {
+	//	onChartUpdate("Curve1", x, y);
+	//});
 
+	connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
 }
 
 
@@ -77,12 +76,24 @@ QWidget* ChartManager::getWidget() {
 	return m_widget;
 }
 
-void ChartManager::onChartUpdate(int x, qreal y) {
-	xData << x;
-	yData << y;
-	curve->setSamples(xData, yData); // 更新曲线的数据点
+void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
+	//xData << x;
+	//yData << y;
+	//curve->setSamples(xData, yData); // 更新曲线的数据点
 
+	if (!xDataMap.contains(curveName) || !yDataMap.contains(curveName)) {
+		return; // 如果曲线名称不存在，则直接返回
+	}
 
+	xDataMap[curveName] << x;
+	yDataMap[curveName] << y;
+
+	for (auto &curve : curves) {
+		if (curve->title().text() == curveName) {
+			curve->setSamples(xDataMap[curveName], yDataMap[curveName]); // 更新指定曲线的数据点
+			break;
+		}
+	}
 		// 确定当前数据点所在的X轴区间
 	int xIntervalIndex = x / xInterval; // 计算当前数据点属于哪个间隔区间
 	double xMin = xIntervalIndex * xInterval;
@@ -146,4 +157,14 @@ void ChartManager::onIntervalPBClicked() {
 
 		plot->replot(); // 重绘图表以应用新的间隔
 	}
+}
+
+
+void ChartManager::addCurve(const QString &curveName, const QColor &color) {
+	QwtPlotCurve *curve = new QwtPlotCurve(curveName);
+	curve->setPen(color, 2); // 设置曲线颜色和宽度
+	curve->attach(plot);
+	curves.append(curve);
+	xDataMap[curveName] = QVector<double>(); // 初始化数据存储
+	yDataMap[curveName] = QVector<double>();
 }

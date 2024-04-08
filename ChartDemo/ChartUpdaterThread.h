@@ -11,7 +11,7 @@ public:
 	void run() override;
 
 signals:
-	void updateChart(int x, qreal y);
+	void updateChart(const QString &curveName, int x, qreal y);
 
 protected:
 	bool running = true;
