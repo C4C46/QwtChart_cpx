@@ -26,6 +26,8 @@ void ChartDemo::init()
 
 	chartManager = new ChartManager(this, ui.Chartwidget);
 	chartManager->start();
+
+	qDebug() << " sdsdsd: ";
 }
 
 void ChartDemo::handleIntervalPBClicked() {
