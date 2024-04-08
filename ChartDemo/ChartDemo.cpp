@@ -15,14 +15,14 @@ ChartDemo::ChartDemo(QWidget *parent)
 
 ChartDemo::~ChartDemo()
 {
-	configLoader->saveConfig("F:/ChartDemo/ChartDemo/x64/Release/Event.json");
+	configLoader->saveConfig("F:/QwtChart_cpx/x64/Release/Event.json");
 	delete chartManager;
 }
 
 void ChartDemo::init()
 {
 	configLoader = new ConfigLoader(ui.tableWidget, this);
-	configLoader->loadConfig("F:/ChartDemo/ChartDemo/x64/Release/Event.json");
+	configLoader->loadConfig("F:/QwtChart_cpx/x64/Release/Event.json");
 
 	chartManager = new ChartManager(this, ui.Chartwidget);
 	chartManager->start();
