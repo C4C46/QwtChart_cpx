@@ -11,7 +11,7 @@ ChartUpdaterThread::~ChartUpdaterThread() {
 }
 
 void ChartUpdaterThread::run() {
-	int x = 0;
+	double x = 0;
 	while (running) {
 		qreal xIncrement = qrand() % 50 + 1;
 		x += xIncrement;

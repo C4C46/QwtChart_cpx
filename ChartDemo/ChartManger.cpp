@@ -6,7 +6,7 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	: QObject(parent), m_widget(parentWidget), curveNames(curveNames)
 {
 	plot = new QwtPlot(parentWidget);
-	plot->setTitle("实时趋势图");
+	//plot->setTitle("实时趋势图");
 	plot->setCanvasBackground(Qt::white);
 
 	// 启用图例
@@ -25,29 +25,25 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 
 	//定义颜色生成步长
 	int colorStep = 360 / curveNames.size();
-
 	for (int i = 0; i < curveNames.size(); ++i)
 	{
 		QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 180);
 		addCurve(curveNames[i], color);
 	}
 
-
-	QVBoxLayout *layout = new QVBoxLayout(m_widget);
-	layout->addWidget(plot);
-	m_widget->setLayout(layout);
-
-	if (m_widget) {
-		m_widget->setLayout(new QVBoxLayout());
-		m_widget->layout()->addWidget(plot);
+	if (m_widget)
+	{
+		QVBoxLayout *layout = new QVBoxLayout(m_widget);
+		layout->addWidget(plot);
+		m_widget->setLayout(layout);
 	}
-
-	connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
 
 	QwtLegend *legend = new QwtLegend();
 	legend->setDefaultItemMode(QwtLegendData::Clickable);
 	plot->insertLegend(legend, QwtPlot::TopLegend);
 
+
+	connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
 	// 连接图例点击信号
 	connect(legend, SIGNAL(clicked(const QVariant &, int)), this, SLOT(onLegendClicked(const QVariant &, int)));
 
@@ -113,6 +109,7 @@ void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 void ChartManager::onIntervalPBClicked() {
 	QDialog dialog(m_widget); // 使用当前widget作为父窗口
 	QVBoxLayout layout(&dialog);
+	dialog.setWindowTitle("参数设置");
 
 	QLabel xLabel("设置x轴间隔米数：", &dialog);
 	QLineEdit xInput(&dialog);
@@ -153,7 +150,7 @@ void ChartManager::onIntervalPBClicked() {
 void ChartManager::addCurve(const QString &curveName, const QColor &color) {
 	QwtPlotCurve *curve = new QwtPlotCurve(curveName);
 	curve->setTitle(curveName); // 设置曲线的标题，这将在图例中显示
-	curve->setPen(color, 4); // 设置曲线颜色和宽度
+	curve->setPen(color, 3); // 设置曲线颜色和宽度
 	curve->attach(plot);
 	curves.append(curve);
 	xDataMap[curveName] = QVector<double>(); // 初始化数据存储
@@ -184,7 +181,7 @@ void ChartManager::resetCurvesOpacity() {
 	for (auto &curve : curves) {
 		QColor color = curve->pen().color();
 		color.setAlpha(255); // 设置为完全不透明
-		curve->setPen(QPen(color, 4));
+		curve->setPen(QPen(color, 3));
 	}
 }
 

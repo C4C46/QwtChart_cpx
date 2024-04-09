@@ -21,6 +21,7 @@
 #include <qwt_text.h>
 #include <qwt_legend.h>
 #include <QMouseEvent>
+
 class ChartManager : public QObject {
     Q_OBJECT
 
@@ -42,15 +43,16 @@ public slots:
 
 
 private:
-	QWidget *m_widget; // 替换QMainWindow为QWidget
-	QwtPlot *plot; // 使用QwtPlot代曲原来的QChart
+	QWidget *m_widget; 
+	QwtPlot *plot; 
 	ChartUpdaterThread *updaterThread;
 	QVector<QwtPlotCurve *> curves; // 支持多条曲线
-	QMap<QString, QVector<double>> xDataMap, yDataMap; // 使用映射存储每条曲线的数据
+	QMap<QString, QVector<double>> xDataMap, yDataMap; // 存储每条曲线的数据
+	QStringList curveNames;
 	double xInterval = 10; // 默认x间隔值
 	double yInterval = 10; // 默认y间隔值
 
-	QStringList curveNames;
+
 	void resetCurvesOpacity(); // 添加成员变量存储曲线名称
 	void installEventFilters();//恢复所有曲线显示
 };
