@@ -15,14 +15,14 @@ ChartDemo::ChartDemo(QWidget *parent)
 
 ChartDemo::~ChartDemo()
 {
-	configLoader->saveConfig("F:/QwtChart_cpx/x64/Release/Event.json");
+	configLoader->saveConfig("Config/Event.json");
 	delete chartManager;
 }
 
 void ChartDemo::init()
 {
 	configLoader = new ConfigLoader(ui.tableWidget, this);
-	configLoader->loadConfig("F:/QwtChart_cpx/x64/Release/Event.json");
+	configLoader->loadConfig("Config/Event.json");
 
 
 	QStringList curveNames = configLoader->getCurveNames(); // 获取曲线名称

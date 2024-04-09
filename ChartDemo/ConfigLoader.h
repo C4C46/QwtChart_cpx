@@ -11,6 +11,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
+#include <QCoreApplication>
 
 class ConfigLoader :
 	public QObject

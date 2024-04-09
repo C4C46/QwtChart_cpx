@@ -18,7 +18,8 @@ QStringList ConfigLoader::getCurveNames() const {
 
 void ConfigLoader::loadConfig(const QString &filePath)
 {
-	QFile file(filePath);
+	QString ReadPath = QCoreApplication::applicationDirPath() + "/" + filePath;
+	QFile file(ReadPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 		return;
 
@@ -70,7 +71,9 @@ void ConfigLoader::saveConfig(const QString &filePath)
 	QJsonObject jsonObject;
 	jsonObject["event_name"] = configArray;
 
-	QFile file(filePath);
+
+	QString WritePath = QCoreApplication::applicationDirPath() + "/" + filePath;
+	QFile file(WritePath);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 		return;
 
