@@ -9,36 +9,27 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	plot->setTitle("实时趋势图");
 	plot->setCanvasBackground(Qt::white);
 
+	// 启用图例
+	plot->insertLegend(new QwtLegend(), QwtPlot::TopLegend);
+
 	// 设置X轴和Y轴的标题
 	plot->setAxisTitle(QwtPlot::xBottom,"");
 	plot->setAxisTitle(QwtPlot::yLeft,"");
-
-	//// 设置X轴和Y轴的范围
-	//plot->setAxisScale(QwtPlot::xBottom, 0, 1400);
-	//plot->setAxisScale(QwtPlot::yLeft, 0, 800);
 
 	// 创建并配置网格
 	QwtPlotGrid *grid = new QwtPlotGrid();
 	grid->attach(plot); // 将网格附加到图表
 	grid->setVisible(false); // 隐藏网格线
 
-	//// 创建曲线
-	//curve = new QwtPlotCurve();
-	//curve->setPen(Qt::blue, 2); // 设置曲线颜色和宽度
-	//curve->attach(plot); // 将曲线附加到图表
-	//addCurve("Curve1", Qt::blue);
-	//addCurve("Curve2", Qt::red);
-
-		// 添加18条曲线
-	//for (int i = 1; i <= 18; ++i) {
-	//	QColor color = QColor::fromHsv((i * 20) % 360, 255, 255); // 生成不同的颜色
-	//	addCurve(QString("Curve%1").arg(i), color);
-	//}
 	updaterThread = new ChartUpdaterThread(this, curveNames);
 
-	for (const QString &name : curveNames) {
-		QColor color = QColor::fromHsv(qrand() % 360, 255, 255); // 随机颜色
-		addCurve(name, color);
+	//定义颜色生成步长
+	int colorStep = 360 / curveNames.size();
+
+	for (int i = 0; i < curveNames.size(); ++i)
+	{
+		QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 255);
+		addCurve(curveNames[i], color);
 	}
 
 	QVBoxLayout *layout = new QVBoxLayout(m_widget);
@@ -49,12 +40,6 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 		m_widget->setLayout(new QVBoxLayout());
 		m_widget->layout()->addWidget(plot);
 	}
-
-	/*updaterThread = new ChartUpdaterThread(this);*/
-	//connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
-	//connect(updaterThread, &ChartUpdaterThread::updateChart, this, [this](int x, qreal y) {
-	//	onChartUpdate("Curve1", x, y);
-	//});
 
 	connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
 }
@@ -82,9 +67,7 @@ QWidget* ChartManager::getWidget() {
 }
 
 void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
-	//xData << x;
-	//yData << y;
-	//curve->setSamples(xData, yData); // 更新曲线的数据点
+
 
 	if (!xDataMap.contains(curveName) || !yDataMap.contains(curveName)) {
 		return; // 如果曲线名称不存在，则直接返回
@@ -108,10 +91,6 @@ void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 	int yIntervalIndex = y / yInterval; // 计算当前数据点属于哪个间隔区间
 	double yMin = yIntervalIndex * yInterval;
 	double yMax = yMin + yInterval;
-
-	//// 为了美观，可以在Y轴的最大值和最小值上下各留一点空间
-	//yMin = floor(yMin / yInterval) * yInterval;
-	//yMax = ceil((yMax + yInterval) / yInterval) * yInterval;
 
 	// 更新X轴和Y轴的范围
 	plot->setAxisScale(QwtPlot::xBottom, xMin, xMax);
@@ -155,11 +134,6 @@ void ChartManager::onIntervalPBClicked() {
 		// 更新图表的X轴和Y轴范围
 		plot->setAxisScale(QwtPlot::xBottom, xMin, xMax);
 		plot->setAxisScale(QwtPlot::yLeft, yMin, yMax);
-
-		//// 更新图表的X轴和Y轴间隔
-		//plot->setAxisScale(QwtPlot::xBottom, plot->axisScaleDiv(QwtPlot::xBottom).lowerBound(), plot->axisScaleDiv(QwtPlot::xBottom).upperBound(), xInterval);
-		//plot->setAxisScale(QwtPlot::yLeft, plot->axisScaleDiv(QwtPlot::yLeft).lowerBound(), plot->axisScaleDiv(QwtPlot::yLeft).upperBound(), yInterval);
-
 		plot->replot(); // 重绘图表以应用新的间隔
 	}
 }
@@ -167,6 +141,7 @@ void ChartManager::onIntervalPBClicked() {
 
 void ChartManager::addCurve(const QString &curveName, const QColor &color) {
 	QwtPlotCurve *curve = new QwtPlotCurve(curveName);
+	curve->setTitle(curveName); // 设置曲线的标题，这将在图例中显示
 	curve->setPen(color, 2); // 设置曲线颜色和宽度
 	curve->attach(plot);
 	curves.append(curve);

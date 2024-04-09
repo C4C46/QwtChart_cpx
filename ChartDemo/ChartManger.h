@@ -19,7 +19,7 @@
 #include "ChartUpdaterThread.h"
 #include <qwt_plot_magnifier.h>
 #include <qwt_text.h>
-
+#include <qwt_legend.h>
 class ChartManager : public QObject {
     Q_OBJECT
 
