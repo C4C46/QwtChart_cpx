@@ -28,9 +28,10 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 
 	for (int i = 0; i < curveNames.size(); ++i)
 	{
-		QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 255);
+		QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 180);
 		addCurve(curveNames[i], color);
 	}
+
 
 	QVBoxLayout *layout = new QVBoxLayout(m_widget);
 	layout->addWidget(plot);
@@ -42,6 +43,15 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	}
 
 	connect(updaterThread, &ChartUpdaterThread::updateChart, this, &ChartManager::onChartUpdate);
+
+	QwtLegend *legend = new QwtLegend();
+	legend->setDefaultItemMode(QwtLegendData::Clickable);
+	plot->insertLegend(legend, QwtPlot::TopLegend);
+
+	// 连接图例点击信号
+	connect(legend, SIGNAL(clicked(const QVariant &, int)), this, SLOT(onLegendClicked(const QVariant &, int)));
+
+	installEventFilters();
 }
 
 
@@ -55,6 +65,7 @@ ChartManager::~ChartManager() {
 	}
 
 }
+
 
 void ChartManager::start() {
 	if (updaterThread && !updaterThread->isRunning()) {
@@ -142,9 +153,54 @@ void ChartManager::onIntervalPBClicked() {
 void ChartManager::addCurve(const QString &curveName, const QColor &color) {
 	QwtPlotCurve *curve = new QwtPlotCurve(curveName);
 	curve->setTitle(curveName); // 设置曲线的标题，这将在图例中显示
-	curve->setPen(color, 2); // 设置曲线颜色和宽度
+	curve->setPen(color, 4); // 设置曲线颜色和宽度
 	curve->attach(plot);
 	curves.append(curve);
 	xDataMap[curveName] = QVector<double>(); // 初始化数据存储
 	yDataMap[curveName] = QVector<double>();
+}
+
+void ChartManager::onLegendClicked(const QVariant &itemInfo, int index) {
+	QwtPlotItem *clickedItem = plot->infoToItem(itemInfo);
+	if (!clickedItem) return;
+
+	// 首先重置所有曲线到初始透明度状态
+	resetCurvesOpacity();
+
+	// 然后设置未被点击曲线的透明度
+	for (auto &curve : curves) {
+		if (curve != clickedItem) {
+			QColor color = curve->pen().color();
+			color.setAlpha(50); // 设置为半透明
+			curve->setPen(QPen(color, 2));
+		}
+	}
+
+	plot->replot(); // 重绘图表以应用更改
+}
+
+
+void ChartManager::resetCurvesOpacity() {
+	for (auto &curve : curves) {
+		QColor color = curve->pen().color();
+		color.setAlpha(255); // 设置为完全不透明
+		curve->setPen(QPen(color, 4));
+	}
+}
+
+
+void ChartManager::installEventFilters() {
+	plot->canvas()->installEventFilter(this);
+}
+
+bool ChartManager::eventFilter(QObject *watched, QEvent *event) {
+	if (watched == plot->canvas() && event->type() == QEvent::MouseButtonPress) {
+		QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+		if (mouseEvent->button() == Qt::LeftButton) {
+			resetCurvesOpacity();
+			plot->replot();
+			return true; // 表示事件已处理
+		}
+	}
+	return QObject::eventFilter(watched, event); // 对于其他事件，调用基类的事件过滤器方法
 }

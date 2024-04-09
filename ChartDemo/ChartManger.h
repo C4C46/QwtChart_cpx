@@ -20,6 +20,7 @@
 #include <qwt_plot_magnifier.h>
 #include <qwt_text.h>
 #include <qwt_legend.h>
+#include <QMouseEvent>
 class ChartManager : public QObject {
     Q_OBJECT
 
@@ -30,10 +31,14 @@ public:
 	QWidget* getWidget();
 
 
+protected:
+	bool eventFilter(QObject *watched, QEvent *event) override;
+
 public slots:
 	void onChartUpdate(const QString &curveName, int x, qreal y);
 	void onIntervalPBClicked();
-	void addCurve(const QString &curveName, const QColor &color); // 新增方法
+	void addCurve(const QString &curveName, const QColor &color); 
+	void onLegendClicked(const QVariant &itemInfo, int index);
 
 
 private:
@@ -45,6 +50,8 @@ private:
 	double xInterval = 10; // 默认x间隔值
 	double yInterval = 10; // 默认y间隔值
 
-	QStringList curveNames; // 添加成员变量存储曲线名称
+	QStringList curveNames;
+	void resetCurvesOpacity(); // 添加成员变量存储曲线名称
+	void installEventFilters();//恢复所有曲线显示
 };
 
