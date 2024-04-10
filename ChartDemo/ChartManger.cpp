@@ -23,13 +23,17 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 
 	updaterThread = new ChartUpdaterThread(this, curveNames);
 
-	//定义颜色生成步长
-	int colorStep = 360 / curveNames.size();
-	for (int i = 0; i < curveNames.size(); ++i)
+	if (!curveNames.isEmpty())
 	{
-		QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 180);
-		addCurve(curveNames[i], color);
+		//定义颜色生成步长
+		int colorStep = 360 / curveNames.size();
+		for (int i = 0; i < curveNames.size(); ++i)
+		{
+			QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 180);
+			addCurve(curveNames[i], color);
+		}
 	}
+
 
 	if (m_widget)
 	{
