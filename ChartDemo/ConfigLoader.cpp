@@ -46,6 +46,9 @@ void ConfigLoader::loadConfig(const QString &filePath)
 
 		QCheckBox* checkBox = new QCheckBox();
 		checkBox->setChecked(display);
+		connect(checkBox, &QCheckBox::toggled, this, [this, name](bool checked) {
+			emit curveDisplayChanged(name, checked);
+		});
 		m_tableWidget->setCellWidget(i, 0, checkBox);
 		m_tableWidget->setItem(i, 1, new QTableWidgetItem(name));
 	}
@@ -80,3 +83,5 @@ void ConfigLoader::saveConfig(const QString &filePath)
 	QJsonDocument doc(jsonObject);
 	file.write(doc.toJson());
 }
+
+

@@ -17,6 +17,7 @@ ChartDemo::~ChartDemo()
 {
 	configLoader->saveConfig("Config/Event.json");
 	delete chartManager;
+	delete configLoader;
 }
 
 void ChartDemo::init()
@@ -28,6 +29,7 @@ void ChartDemo::init()
 	QStringList curveNames = configLoader->getCurveNames(); // 获取曲线名称
 	chartManager = new ChartManager(this, ui.Chartwidget, curveNames);
 	chartManager->start();
+	connect(configLoader, &ConfigLoader::curveDisplayChanged, chartManager, &ChartManager::onCurveDisplayChanged);
 }
 
 void ChartDemo::handleIntervalPBClicked() {

@@ -20,8 +20,9 @@
 #include <qwt_plot_magnifier.h>
 #include <qwt_text.h>
 #include <qwt_legend.h>
+#include <qwt_legend_label.h>
 #include <QMouseEvent>
-
+#include "ConfigLoader.h"
 class ChartManager : public QObject {
     Q_OBJECT
 
@@ -40,7 +41,7 @@ public slots:
 	void onIntervalPBClicked();
 	void addCurve(const QString &curveName, const QColor &color); 
 	void onLegendClicked(const QVariant &itemInfo, int index);
-
+	void onCurveDisplayChanged(const QString &curveName, bool display); // 添加这个槽函数
 
 private:
 	QWidget *m_widget; 
