@@ -207,66 +207,47 @@ bool ChartManager::eventFilter(QObject *watched, QEvent *event) {
 }
 
 
-//void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
-//{
-//	//for (auto &curve : curves) {
-//	//	if (curve->title().text() == curveName) {
-//	//		curve->setVisible(display); // 根据display参数显示或隐藏曲线
-//	//		curve->setTitle(""); // 设置曲线的标题，这将在图例中显示
-//	//		break;
-//	//	}
-//	//}
-//	//plot->replot(); // 重绘图表以应用更改
-//
-//	for (auto &curve : curves) {
-//		if (curve->title().text() == curveName) {
-//			curve->setVisible(display); // 根据display参数显示或隐藏曲线
-//
-//			if (display) {
-//				// 如果曲线应该显示，确保图例条目也被添加（如果之前被移除的话）
-//				curve->setItemAttribute(QwtPlotItem::Legend, true);
-//			}
-//			else {
-//				// 如果曲线被隐藏，从图例中移除对应的条目
-//				curve->setItemAttribute(QwtPlotItem::Legend, false);
-//			}
-//
-//			break;
-//		}
-//	}
-//	plot->replot(); // 重绘图表以应用更改
-//}
-
-
-void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
-{
-	QwtPlotCurve *existingCurve = nullptr;
-	for (auto &curve : curves) {
-		if (curve->title().text() == curveName) {
-			existingCurve = curve;
-			break;
-		}
-	}
-
+void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display) {
 	if (display) {
-		if (!existingCurve) {
-			// 曲线不存在，创建并添加新曲线
-			QColor color = QColor::fromHsv((curves.size() * 30) % 360, 255, 180); // 示例颜色生成逻辑
-			addCurve(curveName, color); // 调用已有的addCurve方法添加曲线
+		// 检查曲线是否已存在
+		bool curveExists = false;
+		for (auto &curve : curves) {
+			if (curve->title().text() == curveName) {
+				curveExists = true;
+				break;
+			}
 		}
-		else {
-			// 曲线已存在，只需确保它是可见的
-			existingCurve->setVisible(true);
-			existingCurve->setItemAttribute(QwtPlotItem::Legend, true);
+
+		if (!curveExists) {
+			// 曲线不存在，创建新曲线
+			QColor color = QColor::fromHsv((curves.size() * 30) % 360, 255, 180); // 示例颜色
+			addCurve(curveName, color); // 假设这个方法已经实现
+
+			// 更新ChartUpdaterThread中的曲线名称列表
+			QStringList updatedCurveNames;
+			for (auto &curve : curves) {
+				updatedCurveNames.append(curve->title().text());
+			}
+			updaterThread->updateCurveNames(updatedCurveNames);
 		}
 	}
 	else {
-		if (existingCurve) {
-			// 隐藏现有曲线
-			existingCurve->setVisible(false);
-			existingCurve->setItemAttribute(QwtPlotItem::Legend, false);
+		// 处理隐藏曲线的逻辑
+		for (auto &curve : curves) {
+			if (curve->title().text() == curveName) {
+				curve->detach(); // 从图表中移除曲线
+				curves.removeOne(curve); // 从曲线列表中移除
+				break;
+			}
 		}
+
+		// 更新ChartUpdaterThread中的曲线名称列表
+		QStringList updatedCurveNames;
+		for (auto &curve : curves) {
+			updatedCurveNames.append(curve->title().text());
+		}
+		updaterThread->updateCurveNames(updatedCurveNames);
 	}
 
-	plot->replot(); // 重绘图表以应用更改
+	plot->replot(); // 重绘图表
 }
