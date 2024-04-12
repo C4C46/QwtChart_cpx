@@ -1,5 +1,5 @@
 ﻿#include "ChartDemo.h"
-
+#pragma execution_character_set("utf-8")
 
 ChartDemo::ChartDemo(QWidget *parent)
     : QMainWindow(parent)
@@ -29,7 +29,7 @@ void ChartDemo::init()
 
 
 	// 初始化按钮并设置文本
-	toggleTableButton = new QPushButton("Hide Table", this);
+	toggleTableButton = new QPushButton("趋势指标勾选隐藏", this);
 	updateToggleButtonPosition();
 
 	// 连接按钮的clicked信号到toggleTableVisibility槽
@@ -40,13 +40,12 @@ void ChartDemo::init()
 
 
 void ChartDemo::updateToggleButtonPosition() {
-	int buttonWidth = 100;
+	int buttonWidth = 120;
 	int buttonHeight = 30;
-	// 获取主窗口的大小
+
 	QSize mainWindowSize = this->size();
-	// 计算按钮的新位置，使其位于主窗口的右下角
-	int x = mainWindowSize.width() - buttonWidth; // 从窗口右边缘向左偏移按钮宽度+10的距离
-	int y = mainWindowSize.height() - buttonHeight; // 从窗口底部向上偏移按钮高度+30的距离，30是为了考虑状态栏的高度或窗口边框
+	int x = mainWindowSize.width() - buttonWidth; 
+	int y = mainWindowSize.height() - buttonHeight; 
 
 	toggleTableButton->setGeometry(x, y, buttonWidth, buttonHeight);
 }
@@ -54,7 +53,7 @@ void ChartDemo::updateToggleButtonPosition() {
 
 void ChartDemo::toggleTableVisibility() {
 	ui.tableWidget->setVisible(!ui.tableWidget->isVisible());
-	toggleTableButton->setText(ui.tableWidget->isVisible() ? "Hide Table" : "Show Table");
+	toggleTableButton->setText(ui.tableWidget->isVisible() ? "趋势指标勾选隐藏" : "趋势指标勾选显示");
 }
 
 void ChartDemo::handleIntervalPBClicked() {
