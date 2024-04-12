@@ -52,7 +52,7 @@ private:
 	QStringList curveNames;
 	double xInterval = 10; // 默认x间隔值
 	double yInterval = 10; // 默认y间隔值
-
+	QTableWidget *table; // 添加表格成员变量
 
 	void resetCurvesOpacity(); // 添加成员变量存储曲线名称
 	void installEventFilters();//恢复所有曲线显示

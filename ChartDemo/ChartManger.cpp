@@ -21,6 +21,7 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	grid->attach(plot); // 将网格附加到图表
 	grid->setVisible(false); // 隐藏网格线
 
+
 	updaterThread = new ChartUpdaterThread(this, curveNames);
 
 	if (!curveNames.isEmpty())
@@ -39,7 +40,29 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	{
 		QVBoxLayout *layout = new QVBoxLayout(m_widget);
 		layout->addWidget(plot);
+
+
+		table = new QTableWidget(m_widget);
+		table->setRowCount(0); // 初始时没有行
+		table->setColumnCount(curveNames.size() + 1); // 列数根据曲线数量设置
+		QStringList headers = { "位置(m)" };
+		headers.append(curveNames);
+		table->setHorizontalHeaderLabels(headers);
+		//table->setHorizontalHeaderLabels(curveNames); // 使用曲线名称作为列标题
+		table->horizontalHeader()->setStretchLastSection(true);
+		table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+		table->setColumnWidth(0, 100);
+		table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+
+		for (int i = 1; i < table->columnCount(); ++i) {
+			table->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+		}
+		table->verticalHeader()->setVisible(false);
+		// 添加表格到布局
+		layout->addWidget(table);
 		m_widget->setLayout(layout);
+
 	}
 
 	QwtLegend *legend = new QwtLegend();
@@ -52,6 +75,9 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	connect(legend, SIGNAL(clicked(const QVariant &, int)), this, SLOT(onLegendClicked(const QVariant &, int)));
 
 	installEventFilters();
+
+
+
 }
 
 
@@ -76,6 +102,7 @@ void ChartManager::start() {
 QWidget* ChartManager::getWidget() {
 	return m_widget;
 }
+
 
 void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 
@@ -108,6 +135,29 @@ void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 	plot->setAxisScale(QwtPlot::yLeft, yMin, yMax);
 
 	plot->replot(); // 重绘图表
+
+
+	// 检查是否需要添加新行
+	int newRow = table->rowCount();
+	table->insertRow(newRow); // 插入新行
+	  // 在第一列设置x坐标
+	table->setItem(newRow, 0, new QTableWidgetItem(QString::number(x)));
+
+	// 确定曲线名称对应的列索引（加1因为第一列是x坐标）
+	int columnIndex = curveNames.indexOf(curveName) + 1;
+	if (columnIndex == 0) return; // 如果找不到对应的曲线名称，直接返回
+
+	// 在对应的列下添加y值
+	table->setItem(newRow, columnIndex, new QTableWidgetItem(QString::number(y)));
+
+	// 按照曲线更新数据，可能需要填充其他列的空白单元格
+	for (int i = 0; i < table->columnCount(); ++i) {
+		if (i != columnIndex && !table->item(newRow, i)) {
+			table->setItem(newRow, i, new QTableWidgetItem("NaN")); // 填充空白以保持表格整齐
+		}
+	}
+
+	table->scrollToBottom();
 }
 
 void ChartManager::onIntervalPBClicked() {
@@ -154,6 +204,13 @@ void ChartManager::onIntervalPBClicked() {
 void ChartManager::addCurve(const QString &curveName, const QColor &color) {
 	QwtPlotCurve *curve = new QwtPlotCurve(curveName);
 	curve->setTitle(curveName); // 设置曲线的标题，这将在图例中显示
+		// 设置曲线标题的字体大小
+	QwtText title(curveName);
+	QFont font;
+	font.setPointSize(12); // 设置字体大小为12点
+	title.setFont(font);
+	curve->setTitle(title);
+
 	curve->setPen(color, 3); // 设置曲线颜色和宽度
 	curve->attach(plot);
 	curves.append(curve);

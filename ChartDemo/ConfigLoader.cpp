@@ -34,6 +34,13 @@ void ConfigLoader::loadConfig(const QString &filePath)
 
 	m_tableWidget->setRowCount(configArray.size()); // 根据配置文件动态设置行数
 
+	m_tableWidget->setColumnWidth(0, 100); // 为复选框列设置宽度
+	m_tableWidget->setColumnWidth(1, 180); // 为名称列设置更大的宽度
+
+	QFont font = m_tableWidget->font();
+	font.setPointSize(font.pointSize() + 2); // 增加字体大小
+	m_tableWidget->setFont(font);
+
 	for (int i = 0; i < configArray.size(); ++i) {
 		QJsonObject configObject = configArray[i].toObject();
 		QString name = configObject["name"].toString();
@@ -50,9 +57,13 @@ void ConfigLoader::loadConfig(const QString &filePath)
 			emit curveDisplayChanged(name, checked);
 		});
 		m_tableWidget->setCellWidget(i, 0, checkBox);
-		m_tableWidget->setItem(i, 1, new QTableWidgetItem(name));
-	}
 
+		QTableWidgetItem* nameItem = new QTableWidgetItem(name);
+		nameItem->setFlags(nameItem->flags() ^ Qt::ItemIsEditable); // 设置名称列不可编辑
+		m_tableWidget->setItem(i, 1, nameItem);
+	}
+	m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // 第一列根据内容调整大小
+	m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch); // 第二列填充剩余空间
 }
 
 void ConfigLoader::saveConfig(const QString &filePath)
