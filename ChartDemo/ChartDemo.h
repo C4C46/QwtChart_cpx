@@ -24,7 +24,7 @@ public slots:
 
 
 private:
-    Ui::ChartDemoClass ui;
+    Ui::lpTendencyClass ui;
 	ChartManager *chartManager;
 	ConfigLoader *configLoader;
 
