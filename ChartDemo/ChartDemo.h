@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include <QtWidgets/QMainWindow>
+#include <QWidget>
 #include "ui_ChartDemo.h"
 #include "ChartManger.h"
 #include "ConfigLoader.h"
 
-class ChartDemo : public QMainWindow
+class ChartDemo : public QWidget
 {
     Q_OBJECT
 
@@ -17,18 +17,16 @@ public:
 
 	void init();
 
-	void updateToggleButtonPosition();
 
 public slots:
 	void handleIntervalPBClicked();
 	void toggleTableVisibility();
-protected:
-	void resizeEvent(QResizeEvent * event) override;
+
 
 private:
     Ui::ChartDemoClass ui;
 	ChartManager *chartManager;
 	ConfigLoader *configLoader;
 
-	QPushButton* toggleTableButton;
+
 };
