@@ -5,7 +5,7 @@
 ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QStringList &curveNames)
 	: QObject(parent), m_widget(parentWidget), curveNames(curveNames)
 {
-	plot = new QwtPlot(parentWidget);
+	plot = new QwtPlot(m_widget);
 	//plot->setTitle("实时趋势图");
 	plot->setCanvasBackground(Qt::white);
 
@@ -13,8 +13,14 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	plot->insertLegend(new QwtLegend(), QwtPlot::TopLegend);
 
 	// 设置X轴和Y轴的标题
-	plot->setAxisTitle(QwtPlot::xBottom,"");
-	plot->setAxisTitle(QwtPlot::yLeft,"");
+	plot->setAxisTitle(QwtPlot::xBottom, "");
+	plot->setAxisTitle(QwtPlot::yLeft, "");
+
+	plot->setCanvasBackground(QColor(14, 22, 55));
+
+	//// 设置默认的x轴和y轴间隔
+	//plot->setAxisScale(QwtPlot::xBottom, 0, 100, xInterval); // 使用xInterval初始化x轴
+	//plot->setAxisScale(QwtPlot::yLeft, 0, 100, yInterval); // 使用yInterval初始化y轴
 
 	// 创建并配置网格
 	QwtPlotGrid *grid = new QwtPlotGrid();
@@ -35,11 +41,11 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 		}
 	}
 
-
 	if (m_widget)
 	{
-		QVBoxLayout *layout = new QVBoxLayout(m_widget);
-		layout->addWidget(plot);
+		// 使用QSplitter代替原来的布局
+		QSplitter *splitter = new QSplitter(Qt::Vertical, m_widget);
+		splitter->addWidget(plot);
 
 
 		table = new QTableWidget(m_widget);
@@ -59,8 +65,10 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 			table->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
 		}
 		table->verticalHeader()->setVisible(false);
-		// 添加表格到布局
-		layout->addWidget(table);
+		splitter->addWidget(table);
+
+		QVBoxLayout *layout = new QVBoxLayout(m_widget);
+		layout->addWidget(splitter);
 		m_widget->setLayout(layout);
 
 	}
@@ -76,7 +84,7 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 
 	installEventFilters();
 
-
+	//plot->replot(); // 重绘图表以应用新的轴间隔
 
 }
 
@@ -85,8 +93,8 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 ChartManager::~ChartManager() {
 	if (updaterThread) {
 		updaterThread->stopRunning();
-		updaterThread->wait(); 
-		delete updaterThread; 
+		updaterThread->wait();
+		delete updaterThread;
 		updaterThread = nullptr;
 	}
 
@@ -120,7 +128,7 @@ void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 			break;
 		}
 	}
-		// 确定当前数据点所在的X轴区间
+	// 确定当前数据点所在的X轴区间
 	int xIntervalIndex = x / xInterval; // 计算当前数据点属于哪个间隔区间
 	double xMin = xIntervalIndex * xInterval;
 	double xMax = xMin + xInterval;
@@ -167,10 +175,12 @@ void ChartManager::onIntervalPBClicked() {
 
 	QLabel xLabel("设置x轴间隔米数：", &dialog);
 	QLineEdit xInput(&dialog);
+	xInput.setText(QString::number(xInterval)); // 使用xInterval初始化文本
 	xInput.setValidator(new QDoubleValidator(0, 10000, 2, &xInput)); // 限制输入为数字
 
 	QLabel yLabel("设置y轴间隔毫米数：", &dialog);
 	QLineEdit yInput(&dialog);
+	yInput.setText(QString::number(yInterval)); // 使用yInterval初始化文本
 	yInput.setValidator(new QDoubleValidator(0, 10000, 2, &yInput)); // 限制输入为数字
 
 	QPushButton confirmButton("确认", &dialog);
@@ -286,6 +296,18 @@ void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
 				updatedCurveNames.append(curve->title().text());
 			}
 			updaterThread->updateCurveNames(updatedCurveNames);
+
+			// 添加曲线名称到curveNames列表，用于表格列的同步
+			curveNames.append(curveName);
+
+			// 添加列到表格
+			int newColumnIndex = table->columnCount();
+			table->insertColumn(newColumnIndex);
+			table->setHorizontalHeaderItem(newColumnIndex, new QTableWidgetItem(curveName));
+			// 为已有行的新列填充默认值
+			for (int row = 0; row < table->rowCount(); ++row) {
+				table->setItem(row, newColumnIndex, new QTableWidgetItem("NaN"));
+			}
 		}
 	}
 	else {
@@ -304,6 +326,11 @@ void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
 			updatedCurveNames.append(curve->title().text());
 		}
 		updaterThread->updateCurveNames(updatedCurveNames);
+		int columnIndex = curveNames.indexOf(curveName) + 1; // +1 因为第一列是固定的“位置(m)”
+		if (columnIndex > 0) {
+			table->removeColumn(columnIndex);
+			curveNames.removeAll(curveName); // 从曲线名称列表中移除
+		}
 	}
 
 	plot->replot(); // 重绘图表
