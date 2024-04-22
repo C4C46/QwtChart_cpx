@@ -171,42 +171,152 @@ void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 void ChartManager::onIntervalPBClicked() {
 	QDialog dialog(m_widget); // 使用当前widget作为父窗口
 	QVBoxLayout layout(&dialog);
-	dialog.setWindowTitle("参数设置");
+	dialog.setWindowTitle("预警值设置");
 
-	QLabel xLabel("设置x轴间隔米数：", &dialog);
-	QLineEdit xInput(&dialog);
-	xInput.setText(QString::number(xInterval)); // 使用xInterval初始化文本
-	xInput.setValidator(new QDoubleValidator(0, 10000, 2, &xInput)); // 限制输入为数字
+	//QLabel xLabel("设置x轴间隔米数：", &dialog);
+	//QLineEdit xInput(&dialog);
+	//xInput.setText(QString::number(xInterval)); // 使用xInterval初始化文本
+	//xInput.setValidator(new QDoubleValidator(0, 10000, 2, &xInput)); // 限制输入为数字
 
-	QLabel yLabel("设置y轴间隔毫米数：", &dialog);
-	QLineEdit yInput(&dialog);
-	yInput.setText(QString::number(yInterval)); // 使用yInterval初始化文本
-	yInput.setValidator(new QDoubleValidator(0, 10000, 2, &yInput)); // 限制输入为数字
+	//QLabel yLabel("设置y轴间隔毫米数：", &dialog);
+	//QLineEdit yInput(&dialog);
+	//yInput.setText(QString::number(yInterval)); // 使用yInterval初始化文本
+	//yInput.setValidator(new QDoubleValidator(0, 10000, 2, &yInput)); // 限制输入为数字
+
+	//QPushButton confirmButton("确认", &dialog);
+	//connect(&confirmButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+	//layout.addWidget(&xLabel);
+	//layout.addWidget(&xInput);
+	//layout.addWidget(&yLabel);
+	//layout.addWidget(&yInput);
+	//layout.addWidget(&confirmButton);
+
+	QStringList warningLabels = {
+	"设置A/B面左侧陶瓷宽度预警值（毫米）：",
+	"设置A/B面右侧陶瓷宽度预警值（毫米）：", // 假设的新标签
+	"设置A/B面电浆宽度预警值（毫米）：", // 假设的新标签
+	"设置A/B面整体宽度预警值（毫米）："  // 假设的新标签
+	};
+
+
+	QStringList alarmLabels = {
+	"设置A/B面左侧陶瓷宽度告警值（毫米）：",
+	"设置A/B面右侧陶瓷宽度告警值（毫米）：", // 假设的新标签
+	"设置A/B面电浆宽度告警值（毫米）：", // 假设的新标签
+	"设置A/B面整体宽度告警值（毫米）："  // 假设的新标签
+	};
+
+	for (int i = 0; i < warningLabels.size(); ++i) {
+		// 预警值标签
+		QLabel* warningLabel = new QLabel(warningLabels[i], &dialog);
+		layout.addWidget(warningLabel);
+
+		// 上限区域
+		QHBoxLayout* upperLayout = new QHBoxLayout;
+		QLabel* upperLabel = new QLabel("上限区域：", &dialog);
+		QLineEdit* upperInput1 = new QLineEdit(&dialog);
+		upperInput1->setValidator(new QDoubleValidator(0, 10000, 2, upperInput1));
+		QLineEdit* upperInput2 = new QLineEdit(&dialog);
+		upperInput2->setValidator(new QDoubleValidator(0, 10000, 2, upperInput2));
+		upperLayout->addWidget(upperLabel);
+		upperLayout->addWidget(upperInput1);
+		upperLayout->addWidget(upperInput2);
+		layout.addLayout(upperLayout);
+
+		// 下限区域
+		QHBoxLayout* lowerLayout = new QHBoxLayout;
+		QLabel* lowerLabel = new QLabel("下限区域：", &dialog);
+		QLineEdit* lowerInput1 = new QLineEdit(&dialog);
+		lowerInput1->setValidator(new QDoubleValidator(0, 10000, 2, lowerInput1));
+		QLineEdit* lowerInput2 = new QLineEdit(&dialog);
+		lowerInput2->setValidator(new QDoubleValidator(0, 10000, 2, lowerInput2));
+		lowerLayout->addWidget(lowerLabel);
+		lowerLayout->addWidget(lowerInput1);
+		lowerLayout->addWidget(lowerInput2);
+		layout.addLayout(lowerLayout);
+
+		// 告警值标签
+		QLabel* alarmLabel = new QLabel(alarmLabels[i], &dialog);
+		layout.addWidget(alarmLabel);
+
+		// 告警值区域
+		QHBoxLayout* alarmLayout = new QHBoxLayout;
+		QLabel* greaterLabel = new QLabel("大于", &dialog);
+		QLineEdit* greaterInput = new QLineEdit(&dialog);
+		greaterInput->setValidator(new QDoubleValidator(0, 10000, 2, greaterInput));
+		QLabel* lessLabel = new QLabel("或小于", &dialog);
+		QLineEdit* lessInput = new QLineEdit(&dialog);
+		lessInput->setValidator(new QDoubleValidator(0, 10000, 2, lessInput));
+		alarmLayout->addWidget(greaterLabel);
+		alarmLayout->addWidget(greaterInput);
+		alarmLayout->addWidget(lessLabel);
+		alarmLayout->addWidget(lessInput);
+		layout.addLayout(alarmLayout);
+	}
+	//QLabel warningLabel("设置A/B面左侧陶瓷宽度预警值（毫米）：", &dialog);
+	//layout.addWidget(&warningLabel);
+
+	//// 上限区域
+	//QHBoxLayout upperLayout;
+	//QLabel upperLabel("上限区域：", &dialog);
+	//QLineEdit upperInput1(&dialog);
+	//upperInput1.setValidator(new QDoubleValidator(0, 10000, 2, &upperInput1));
+	//QLineEdit upperInput2(&dialog);
+	//upperInput2.setValidator(new QDoubleValidator(0, 10000, 2, &upperInput2));
+	//upperLayout.addWidget(&upperLabel);
+	//upperLayout.addWidget(&upperInput1);
+	//upperLayout.addWidget(&upperInput2);
+	//layout.addLayout(&upperLayout);
+
+	//// 下限区域
+	//QHBoxLayout lowerLayout;
+	//QLabel lowerLabel("下限区域：", &dialog);
+	//QLineEdit lowerInput1(&dialog);
+	//lowerInput1.setValidator(new QDoubleValidator(0, 10000, 2, &lowerInput1));
+	//QLineEdit lowerInput2(&dialog);
+	//lowerInput2.setValidator(new QDoubleValidator(0, 10000, 2, &lowerInput2));
+	//lowerLayout.addWidget(&lowerLabel);
+	//lowerLayout.addWidget(&lowerInput1);
+	//lowerLayout.addWidget(&lowerInput2);
+	//layout.addLayout(&lowerLayout);
+
+	//// 设置A/B面左侧陶瓷宽度告警值（毫米）
+	//QLabel alarmLabel("设置A/B面左侧陶瓷宽度告警值（毫米）：", &dialog);
+	//layout.addWidget(&alarmLabel);
+
+	//QHBoxLayout alarmLayout;
+	//QLabel greaterLabel("大于", &dialog);
+	//QLineEdit greaterInput(&dialog);
+	//greaterInput.setValidator(new QDoubleValidator(0, 10000, 2, &greaterInput));
+	//QLabel lessLabel("或小于", &dialog);
+	//QLineEdit lessInput(&dialog);
+	//lessInput.setValidator(new QDoubleValidator(0, 10000, 2, &lessInput));
+	//alarmLayout.addWidget(&greaterLabel);
+	//alarmLayout.addWidget(&greaterInput);
+	//alarmLayout.addWidget(&lessLabel);
+	//alarmLayout.addWidget(&lessInput);
+	//layout.addLayout(&alarmLayout);
 
 	QPushButton confirmButton("确认", &dialog);
 	connect(&confirmButton, &QPushButton::clicked, &dialog, &QDialog::accept);
-
-	layout.addWidget(&xLabel);
-	layout.addWidget(&xInput);
-	layout.addWidget(&yLabel);
-	layout.addWidget(&yInput);
 	layout.addWidget(&confirmButton);
 
 	// 显示对话框
 	if (dialog.exec() == QDialog::Accepted) {
-		xInterval = xInput.text().toDouble();
-		yInterval = yInput.text().toDouble();
+		//xInterval = xInput.text().toDouble();
+		//yInterval = yInput.text().toDouble();
 
-		// 计算新的X轴和Y轴范围
-		double xMin = 0;
-		double xMax = xMin + xInterval; // 以xInterval为间隔计算xMax
-		double yMin = 0;
-		double yMax = yMin + yInterval; // 以yInterval为间隔计算yMax
+		//// 计算新的X轴和Y轴范围
+		//double xMin = 0;
+		//double xMax = xMin + xInterval; // 以xInterval为间隔计算xMax
+		//double yMin = 0;
+		//double yMax = yMin + yInterval; // 以yInterval为间隔计算yMax
 
-		// 更新图表的X轴和Y轴范围
-		plot->setAxisScale(QwtPlot::xBottom, xMin, xMax);
-		plot->setAxisScale(QwtPlot::yLeft, yMin, yMax);
-		plot->replot(); // 重绘图表以应用新的间隔
+		//// 更新图表的X轴和Y轴范围
+		//plot->setAxisScale(QwtPlot::xBottom, xMin, xMax);
+		//plot->setAxisScale(QwtPlot::yLeft, yMin, yMax);
+		//plot->replot(); // 重绘图表以应用新的间隔
 	}
 }
 
