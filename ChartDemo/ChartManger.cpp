@@ -2,9 +2,10 @@
 
 #pragma execution_character_set("utf-8")
 
-ChartManager::ChartManager(QObject *parent, QWidget *parentWidget,
-	const QStringList &curveNames, ConfigLoader* configLoader)
-	: QObject(parent), m_widget(parentWidget), curveNames(curveNames), m_configLoader(configLoader)
+ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QStringList &curveNames,
+	ConfigLoader* configLoader, ChartUpdaterThread* updaterThread)
+	: QObject(parent), m_widget(parentWidget), curveNames(curveNames),
+	m_configLoader(configLoader), updaterThread(updaterThread)
 {
 	plot = new QwtPlot(m_widget);
 	//plot->setTitle("实时趋势图");
@@ -16,9 +17,25 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget,
 	// 设置X轴和Y轴的标题
 	plot->setAxisTitle(QwtPlot::xBottom, "");
 	plot->setAxisTitle(QwtPlot::yLeft, "");
+
+	QString selectedParentNames = m_configLoader->getSelectedParentNames();
+	if (!selectedParentNames.isEmpty())
+	{
+		QVariantMap settingDefaults = m_configLoader->getSettingDefaultValue(selectedParentNames);
+		if (settingDefaults.contains("yAxisRange"))
+		{
+			QVariantList yAxisRange = settingDefaults["yAxisRange"].toList();
+			if (yAxisRange.size() == 2) {
+				double minY = yAxisRange[0].toDouble();
+				double maxY = yAxisRange[1].toDouble();
+				plot->setAxisScale(QwtPlot::yLeft, minY, maxY);
+			}
+		}
+		plot->replot();
+	}
 	// 设置X轴和Y轴的初始范围
 	plot->setAxisScale(QwtPlot::xBottom, 0, 50); // 设置X轴的范围为0-50
-	plot->setAxisScale(QwtPlot::yLeft, 0, 900); // 设置Y轴的范围为0-900
+	//plot->setAxisScale(QwtPlot::yLeft, 0, 900); // 设置Y轴的范围为0-900
 
 
 	plot->setCanvasBackground(QColor(14, 22, 55));

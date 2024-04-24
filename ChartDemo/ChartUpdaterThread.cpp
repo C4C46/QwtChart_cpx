@@ -65,7 +65,8 @@ void ChartUpdaterThread::readData() {
     QString curveName = json["curveName"].toString(); // 获取曲线名称
     double x = json["x"].toDouble();
     double y = json["y"].toDouble();
-
+	qDebug() << "Emitting updateChart with" << curveName << x << y;
     // 根据曲线名称和数据触发信号
     emit updateChart(curveName, x, y);
+	qDebug() << "Signal emitted";
 }

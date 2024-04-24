@@ -49,6 +49,9 @@
     <ClCompile Include="CustomChartView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DataScope.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ConfigLoader.h">
@@ -64,6 +67,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="ChartDemo.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="DataScope.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

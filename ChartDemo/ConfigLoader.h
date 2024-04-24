@@ -21,9 +21,12 @@ class ConfigLoader :
 
 public:
 	explicit ConfigLoader(QTreeWidget *treeWidget, QObject *parent = nullptr);
+	QStringList getAllCurveNames() const;//返回所有子项名称
 	QVariantMap getSettingDefaultValue(const QString & settingName);
+
 	void loadConfig(const QString &filePath);
 	void saveConfig(const QString &filePath); // 添加保存配置的声明
+	QString getSelectedParentNames() const;
 	QStringList getCurveNames() const; // 新增方法
 
 	QStringList getParentCategoryNames() const;

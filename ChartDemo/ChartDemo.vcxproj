@@ -109,6 +109,7 @@
     <QtMoc Include="ChartDemo.h" />
     <ClCompile Include="ChartDemo.cpp" />
     <ClCompile Include="ConfigLoader.cpp" />
+    <ClCompile Include="DataScope.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -122,6 +123,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="CustomChartView.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="DataScope.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

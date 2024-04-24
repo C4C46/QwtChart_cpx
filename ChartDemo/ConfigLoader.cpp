@@ -56,6 +56,18 @@ QStringList ConfigLoader::getParentCategoryNames() const {
 }
 
 
+QStringList ConfigLoader::getAllCurveNames() const {
+	QStringList allCurveNames;
+	for (int i = 0; i < m_treeWidget->topLevelItemCount(); ++i) {
+		QTreeWidgetItem *parentItem = m_treeWidget->topLevelItem(i);
+		for (int j = 0; j < parentItem->childCount(); ++j) {
+			QTreeWidgetItem *childItem = parentItem->child(j);
+			allCurveNames.append(childItem->text(1)); // 添加所有子项名称
+		}
+	}
+	return allCurveNames;
+}
+
 QVariantMap ConfigLoader::getSettingDefaultValue(const QString& settingName) {
 	QVariantMap settingDefaults;
 
@@ -99,6 +111,7 @@ QVariantMap ConfigLoader::getSettingDefaultValue(const QString& settingName) {
 
 	return settingDefaults;
 }
+
 
 void ConfigLoader::loadConfig(const QString &filePath) {
 	QString readPath = QCoreApplication::applicationDirPath() + "/" + filePath;
@@ -285,4 +298,20 @@ void ConfigLoader::saveConfig(const QString &filePath)
 	QJsonDocument doc(rootObject);
 	file.write(doc.toJson());
 	file.close();
+}
+
+QString ConfigLoader::getSelectedParentNames() const {
+
+	for (int i = 0; i < m_treeWidget->topLevelItemCount(); ++i)
+	{
+		QTreeWidgetItem *item = m_treeWidget->topLevelItem(i);
+		QRadioButton *radioButton = qobject_cast<QRadioButton *>(m_treeWidget->itemWidget(item, 0));
+		if (radioButton && radioButton->isChecked())
+		{
+			return item->text(1);//返回選擇的父類名稱
+		}
+	}
+
+	return QString();
+
 }
