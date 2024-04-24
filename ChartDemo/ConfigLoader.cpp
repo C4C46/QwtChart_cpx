@@ -19,7 +19,85 @@ ConfigLoader::ConfigLoader(QTreeWidget *treeWidget, QObject *parent)
 }
 
 QStringList ConfigLoader::getCurveNames() const {
-	return curveNames;
+	QStringList selectedCurveNames;
+	for (int i = 0; i < m_treeWidget->topLevelItemCount(); ++i) {
+		QTreeWidgetItem *parentItem = m_treeWidget->topLevelItem(i);
+		for (int j = 0; j < parentItem->childCount(); ++j) {
+			QTreeWidgetItem *childItem = parentItem->child(j);
+			QCheckBox *checkBox = qobject_cast<QCheckBox *>(m_treeWidget->itemWidget(childItem, 0));
+			if (checkBox && checkBox->isChecked()) {
+				selectedCurveNames.append(childItem->text(1)); // 添加选中的子项名称
+			}
+		}
+	}
+	return selectedCurveNames;
+}
+
+
+
+QStringList ConfigLoader::getParentCategoryNames() const {
+	QStringList parentNames;
+
+	if (configDoc.isNull() || !configDoc.isObject()) {
+		return parentNames;
+	}
+
+	QJsonObject rootObj = configDoc.object();
+	QJsonArray categories = rootObj["categories"].toArray();
+
+	for (const QJsonValue& categoryVal : categories) {
+		QJsonObject categoryObj = categoryVal.toObject();
+		QString categoryName = categoryObj["name"].toString();
+		// 添加父类名称到列表中
+		parentNames.append(categoryName);
+	}
+
+	return parentNames;
+}
+
+
+QVariantMap ConfigLoader::getSettingDefaultValue(const QString& settingName) {
+	QVariantMap settingDefaults;
+
+
+	if (configDoc.isNull() || !configDoc.isObject()) {
+		return settingDefaults;
+	}
+
+	QJsonObject rootObj = configDoc.object();
+	QJsonArray categories = rootObj["categories"].toArray();
+
+	for (const QJsonValue& categoryVal : categories) {
+		QJsonObject categoryObj = categoryVal.toObject();
+		QString categoryName = categoryObj["name"].toString();
+
+
+		if (categoryName == settingName) {
+			qDebug() << "Object:" << categoryObj;
+			// 找到了匹配的设置项，读取其默认值
+			if (categoryObj.contains("settings")) {
+				QJsonObject settingsObj = categoryObj["settings"].toObject();
+				// 从settingsObj中读取yAxisRange
+				if (settingsObj.contains("yAxisRange")) {
+					QJsonArray yAxisRange = settingsObj["yAxisRange"].toArray();
+					settingDefaults["yAxisRange"] = QVariantList{ yAxisRange.at(0).toDouble(), yAxisRange.at(1).toDouble() };
+				}
+				// 从settingsObj中读取warningValue
+				if (settingsObj.contains("warningValue")) {
+					QJsonArray warningValue = settingsObj["warningValue"].toArray();
+					settingDefaults["warningValue"] = QVariantList{ warningValue.at(0).toDouble(), warningValue.at(1).toDouble() };
+				}
+				// 从settingsObj中读取alarmValue
+				if (settingsObj.contains("alarmValue")) {
+					QJsonArray alarmValue = settingsObj["alarmValue"].toArray();
+					settingDefaults["alarmValue"] = QVariantList{ alarmValue.at(0).toDouble(), alarmValue.at(1).toDouble() };
+				}
+			}
+			break; // 找到后退出循环
+		}
+	}
+
+	return settingDefaults;
 }
 
 void ConfigLoader::loadConfig(const QString &filePath) {
@@ -34,11 +112,15 @@ void ConfigLoader::loadConfig(const QString &filePath) {
 	if (doc.isNull() || !doc.isObject())
 		return;
 
+	configDoc = doc;
+
+	// 打印整个文档以验证其内容
+	qDebug() << "Config loaded:" << configDoc.toJson(QJsonDocument::Compact);
+
 	QJsonObject jsonObject = doc.object();
 	QJsonArray categoriesArray = jsonObject["categories"].toArray();
 
 	m_treeWidget->setColumnWidth(0, 35);
-
 	m_treeWidget->setColumnWidth(1, 180); // 为名称列设置更大的宽度
 
 	QFont font = m_treeWidget->font();
@@ -75,8 +157,39 @@ void ConfigLoader::loadConfig(const QString &filePath) {
 
 			QCheckBox *checkBox = new QCheckBox();
 			checkBox->setChecked(display); // 根据配置文件设置复选框的状态
+			checkBox->setEnabled(selected); // 根据父项的选中状态启用或禁用复选框
 			m_treeWidget->setItemWidget(childItem, 0, checkBox); // 将复选框设置在左侧列
+
+			QObject::connect(checkBox, &QCheckBox::toggled, [this, childName](bool checked) {
+				emit curveDisplayChanged(childName, checked);
+			});
 		}
+
+		// 当单选按钮状态改变时，更新子复选框的可用状态
+		QObject::connect(radioButton, &QRadioButton::toggled, [this, parentItem, categoryObject](bool checked) {
+			if (checked) {
+				// 发出Y轴范围改变的信号
+				QVariantMap settingDefaults = getSettingDefaultValue(parentItem->text(1));
+				if (settingDefaults.contains("yAxisRange")) {
+					emit yAxisRangeChanged(settingDefaults["yAxisRange"].toList());
+				}
+				if (settingDefaults.contains("warningValue")) {
+					emit warningValueChanged(settingDefaults["warningValue"].toList());
+				}
+				if (settingDefaults.contains("alarmValue")) {
+					emit alarmValueChanged(settingDefaults["alarmValue"].toList());
+				}
+			}
+
+			for (int j = 0; j < parentItem->childCount(); ++j) {
+				QTreeWidgetItem *childItem = parentItem->child(j);
+				QCheckBox *checkBox = qobject_cast<QCheckBox *>(m_treeWidget->itemWidget(childItem, 0));
+				if (checkBox) {
+					checkBox->setEnabled(checked);
+					if (!checked) checkBox->setChecked(false); // 如果父项未选中，也取消子项的勾选状态
+				}
+			}
+		});
 		//// 如果父项被选中，则展开该项
 		//if (selected) {
 		//	m_treeWidget->expandItem(parentItem);
@@ -110,8 +223,8 @@ void ConfigLoader::loadConfig(const QString &filePath) {
 			}
 		}
 
-		QString selectedCategory = curveNames.at(id);
-		emit curveDisplayChanged(selectedCategory, true);
+		//QString selectedCategory = curveNames.at(id);
+		//emit curveDisplayChanged(selectedCategory, true);
 	});
 }
 
@@ -135,6 +248,21 @@ void ConfigLoader::saveConfig(const QString &filePath)
 
 		QRadioButton *radioButton = qobject_cast<QRadioButton *>(m_treeWidget->itemWidget(parentItem, 0));
 		categoryObject["selected"] = radioButton && radioButton->isChecked(); // 检查单选按钮是否被选中
+
+		QVariantMap settingDefaults = getSettingDefaultValue(parentItem->text(1));
+		QJsonObject settingsObject; // 创建一个新的JSON对象来存储设置
+		if (!settingDefaults.isEmpty()) {
+			if (settingDefaults.contains("yAxisRange")) {
+				settingsObject["yAxisRange"] = QJsonArray::fromVariantList(settingDefaults["yAxisRange"].toList());
+			}
+			if (settingDefaults.contains("warningValue")) {
+				settingsObject["warningValue"] = QJsonArray::fromVariantList(settingDefaults["warningValue"].toList());
+			}
+			if (settingDefaults.contains("alarmValue")) {
+				settingsObject["alarmValue"] = QJsonArray::fromVariantList(settingDefaults["alarmValue"].toList());
+			}
+		}
+		categoryObject["settings"] = settingsObject; // 将设置对象添加到类别对象中
 
 		QJsonArray childrenArray;
 		for (int j = 0; j < parentItem->childCount(); ++j) {

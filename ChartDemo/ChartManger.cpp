@@ -2,8 +2,9 @@
 
 #pragma execution_character_set("utf-8")
 
-ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QStringList &curveNames)
-	: QObject(parent), m_widget(parentWidget), curveNames(curveNames)
+ChartManager::ChartManager(QObject *parent, QWidget *parentWidget,
+	const QStringList &curveNames, ConfigLoader* configLoader)
+	: QObject(parent), m_widget(parentWidget), curveNames(curveNames), m_configLoader(configLoader)
 {
 	plot = new QwtPlot(m_widget);
 	//plot->setTitle("实时趋势图");
@@ -15,6 +16,10 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	// 设置X轴和Y轴的标题
 	plot->setAxisTitle(QwtPlot::xBottom, "");
 	plot->setAxisTitle(QwtPlot::yLeft, "");
+	// 设置X轴和Y轴的初始范围
+	plot->setAxisScale(QwtPlot::xBottom, 0, 50); // 设置X轴的范围为0-50
+	plot->setAxisScale(QwtPlot::yLeft, 0, 900); // 设置Y轴的范围为0-900
+
 
 	plot->setCanvasBackground(QColor(14, 22, 55));
 
@@ -32,12 +37,12 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 
 	if (!curveNames.isEmpty())
 	{
-		//定义颜色生成步长
-		int colorStep = 360 / curveNames.size();
+		////定义颜色生成步长
+		//int colorStep = 360 / curveNames.size();
 		for (int i = 0; i < curveNames.size(); ++i)
 		{
-			QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 180);
-			addCurve(curveNames[i], color);
+			//QColor color = QColor::fromHsv((colorStep * i) % 360, 255, 180);
+			addCurve(curveNames[i]);
 		}
 	}
 
@@ -46,27 +51,6 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 		// 使用QSplitter代替原来的布局
 		QSplitter *splitter = new QSplitter(Qt::Vertical, m_widget);
 		splitter->addWidget(plot);
-
-
-		table = new QTableWidget(m_widget);
-		table->setRowCount(0); // 初始时没有行
-		table->setColumnCount(curveNames.size() + 1); // 列数根据曲线数量设置
-		QStringList headers = { "位置(m)" };
-		headers.append(curveNames);
-		table->setHorizontalHeaderLabels(headers);
-		//table->setHorizontalHeaderLabels(curveNames); // 使用曲线名称作为列标题
-		table->horizontalHeader()->setStretchLastSection(true);
-		table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-		table->setColumnWidth(0, 100);
-		table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
-
-		for (int i = 1; i < table->columnCount(); ++i) {
-			table->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
-		}
-		table->verticalHeader()->setVisible(false);
-		splitter->addWidget(table);
-
 		QVBoxLayout *layout = new QVBoxLayout(m_widget);
 		layout->addWidget(splitter);
 		m_widget->setLayout(layout);
@@ -82,6 +66,9 @@ ChartManager::ChartManager(QObject *parent, QWidget *parentWidget, const QString
 	// 连接图例点击信号
 	connect(legend, SIGNAL(clicked(const QVariant &, int)), this, SLOT(onLegendClicked(const QVariant &, int)));
 
+	connect(m_configLoader, &ConfigLoader::yAxisRangeChanged, this, &ChartManager::updateYAxisRange);
+	connect(m_configLoader, &ConfigLoader::warningValueChanged, this, &ChartManager::updateWarningValue);
+	connect(m_configLoader, &ConfigLoader::alarmValueChanged, this, &ChartManager::updateAlarmValue);
 	installEventFilters();
 
 	//plot->replot(); // 重绘图表以应用新的轴间隔
@@ -112,6 +99,7 @@ QWidget* ChartManager::getWidget() {
 }
 
 
+
 void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 
 
@@ -128,179 +116,212 @@ void ChartManager::onChartUpdate(const QString &curveName, int x, qreal y) {
 			break;
 		}
 	}
-	// 确定当前数据点所在的X轴区间
-	int xIntervalIndex = x / xInterval; // 计算当前数据点属于哪个间隔区间
-	double xMin = xIntervalIndex * xInterval;
-	double xMax = xMin + xInterval;
+	//	// 确定当前数据点所在的X轴区间
+	//int xIntervalIndex = x / xInterval; // 计算当前数据点属于哪个间隔区间
+	//double xMin = xIntervalIndex * xInterval;
+	//double xMax = xMin + xInterval;
 
-	// Y轴区间计算
-	int yIntervalIndex = y / yInterval; // 计算当前数据点属于哪个间隔区间
-	double yMin = yIntervalIndex * yInterval;
-	double yMax = yMin + yInterval;
+	////// Y轴区间计算
+	////int yIntervalIndex = y / yInterval; // 计算当前数据点属于哪个间隔区间
+	////double yMin = yIntervalIndex * yInterval;
+	////double yMax = yMin + yInterval;
 
-	// 更新X轴和Y轴的范围
-	plot->setAxisScale(QwtPlot::xBottom, xMin, xMax);
-	plot->setAxisScale(QwtPlot::yLeft, yMin, yMax);
+	//// 更新X轴和Y轴的范围
+	//plot->setAxisScale(QwtPlot::xBottom, xMin, xMax);
+	////plot->setAxisScale(QwtPlot::yLeft, yMin, yMax);
+	if (!isViewingHistory) {
+		xInterval = 50; // 这里设置x轴的间隔值，根据实际情况调整
+		int xMaxCurrent = plot->axisScaleDiv(QwtPlot::xBottom).upperBound(); // 获取当前x轴的最大值
+		if (x >= xMaxCurrent) {
+			int xMinNew = ((x / xInterval) * xInterval);
+			int xMaxNew = xMinNew + xInterval;
+			plot->setAxisScale(QwtPlot::xBottom, xMinNew, xMaxNew);
+		}
+	}
+
 
 	plot->replot(); // 重绘图表
 
 
-	// 检查是否需要添加新行
-	int newRow = table->rowCount();
-	table->insertRow(newRow); // 插入新行
-	  // 在第一列设置x坐标
-	table->setItem(newRow, 0, new QTableWidgetItem(QString::number(x)));
+	//// 检查是否需要添加新行
+	//int newRow = table->rowCount();
+	//table->insertRow(newRow); // 插入新行
+	//  // 在第一列设置x坐标
+	//table->setItem(newRow, 0, new QTableWidgetItem(QString::number(x)));
 
-	// 确定曲线名称对应的列索引（加1因为第一列是x坐标）
-	int columnIndex = curveNames.indexOf(curveName) + 1;
-	if (columnIndex == 0) return; // 如果找不到对应的曲线名称，直接返回
+	//// 确定曲线名称对应的列索引（加1因为第一列是x坐标）
+	//int columnIndex = curveNames.indexOf(curveName) + 1;
+	//if (columnIndex == 0) return; // 如果找不到对应的曲线名称，直接返回
 
-	// 在对应的列下添加y值
-	table->setItem(newRow, columnIndex, new QTableWidgetItem(QString::number(y)));
+	//// 在对应的列下添加y值
+	//table->setItem(newRow, columnIndex, new QTableWidgetItem(QString::number(y)));
 
-	// 按照曲线更新数据，可能需要填充其他列的空白单元格
-	for (int i = 0; i < table->columnCount(); ++i) {
-		if (i != columnIndex && !table->item(newRow, i)) {
-			table->setItem(newRow, i, new QTableWidgetItem("NaN")); // 填充空白以保持表格整齐
-		}
-	}
+	//// 按照曲线更新数据，可能需要填充其他列的空白单元格
+	//for (int i = 0; i < table->columnCount(); ++i) {
+	//	if (i != columnIndex && !table->item(newRow, i)) {
+	//		table->setItem(newRow, i, new QTableWidgetItem("NaN")); // 填充空白以保持表格整齐
+	//	}
+	//}
 
-	table->scrollToBottom();
+	//QColor cellColor = Qt::white; // Default color
+	//if (y > m_warningValueLower || y < m_warningValueUpper) {
+	//	cellColor = QColor("orange");
+	//}
+	//if (y > m_alarmValueLower || y < m_alarmValueUpper) {
+	//	cellColor = QColor("red");
+	//}
+
+	//// Set the color for the newly added table item
+	//QTableWidgetItem *item = new QTableWidgetItem(QString::number(y));
+	//item->setBackground(cellColor);
+	//table->setItem(newRow, columnIndex, item);
+
+
+	//table->scrollToBottom();
 }
 
 void ChartManager::onIntervalPBClicked() {
 	QDialog dialog(m_widget); // 使用当前widget作为父窗口
-	QVBoxLayout layout(&dialog);
-	dialog.setWindowTitle("预警值设置");
+	dialog.setWindowTitle("参数设置");
+	dialog.resize(550, 800);
+	dialog.setFixedSize(dialog.size());
 
-	//QLabel xLabel("设置x轴间隔米数：", &dialog);
-	//QLineEdit xInput(&dialog);
-	//xInput.setText(QString::number(xInterval)); // 使用xInterval初始化文本
-	//xInput.setValidator(new QDoubleValidator(0, 10000, 2, &xInput)); // 限制输入为数字
-
-	//QLabel yLabel("设置y轴间隔毫米数：", &dialog);
-	//QLineEdit yInput(&dialog);
-	//yInput.setText(QString::number(yInterval)); // 使用yInterval初始化文本
-	//yInput.setValidator(new QDoubleValidator(0, 10000, 2, &yInput)); // 限制输入为数字
-
-	//QPushButton confirmButton("确认", &dialog);
-	//connect(&confirmButton, &QPushButton::clicked, &dialog, &QDialog::accept);
-
-	//layout.addWidget(&xLabel);
-	//layout.addWidget(&xInput);
-	//layout.addWidget(&yLabel);
-	//layout.addWidget(&yInput);
-	//layout.addWidget(&confirmButton);
-
-	QStringList warningLabels = {
-	"设置A/B面左侧陶瓷宽度预警值（毫米）：",
-	"设置A/B面右侧陶瓷宽度预警值（毫米）：", // 假设的新标签
-	"设置A/B面电浆宽度预警值（毫米）：", // 假设的新标签
-	"设置A/B面整体宽度预警值（毫米）："  // 假设的新标签
-	};
+	QGridLayout *gridLayout = new QGridLayout();
 
 
-	QStringList alarmLabels = {
-	"设置A/B面左侧陶瓷宽度告警值（毫米）：",
-	"设置A/B面右侧陶瓷宽度告警值（毫米）：", // 假设的新标签
-	"设置A/B面电浆宽度告警值（毫米）：", // 假设的新标签
-	"设置A/B面整体宽度告警值（毫米）："  // 假设的新标签
-	};
+	// 通过ConfigLoader获取父类名字
+	QStringList settingLabels = m_configLoader->getParentCategoryNames();
 
-	for (int i = 0; i < warningLabels.size(); ++i) {
-		// 预警值标签
-		QLabel* warningLabel = new QLabel(warningLabels[i], &dialog);
-		layout.addWidget(warningLabel);
+	//QStringList settingLabels = {
+	//	"A/B面整体宽度",
+	//	"A/B面电浆宽度",
+	//	"A/B面左侧陶瓷宽度",
+	//	"A/B面右侧陶瓷宽度",
+	//	"A/B面对齐度"
+	//};
 
-		// 上限区域
-		QHBoxLayout* upperLayout = new QHBoxLayout;
-		QLabel* upperLabel = new QLabel("上限区域：", &dialog);
-		QLineEdit* upperInput1 = new QLineEdit(&dialog);
-		upperInput1->setValidator(new QDoubleValidator(0, 10000, 2, upperInput1));
-		QLineEdit* upperInput2 = new QLineEdit(&dialog);
-		upperInput2->setValidator(new QDoubleValidator(0, 10000, 2, upperInput2));
-		upperLayout->addWidget(upperLabel);
-		upperLayout->addWidget(upperInput1);
-		upperLayout->addWidget(upperInput2);
-		layout.addLayout(upperLayout);
+	// 对于每个设置项，我们需要创建不同的控件
+	for (int i = 0; i < settingLabels.size(); ++i) {
+		int row = i * 4; // 每个设置占用4行
+		QString settingName = settingLabels[i];
 
-		// 下限区域
-		QHBoxLayout* lowerLayout = new QHBoxLayout;
-		QLabel* lowerLabel = new QLabel("下限区域：", &dialog);
-		QLineEdit* lowerInput1 = new QLineEdit(&dialog);
-		lowerInput1->setValidator(new QDoubleValidator(0, 10000, 2, lowerInput1));
-		QLineEdit* lowerInput2 = new QLineEdit(&dialog);
-		lowerInput2->setValidator(new QDoubleValidator(0, 10000, 2, lowerInput2));
-		lowerLayout->addWidget(lowerLabel);
-		lowerLayout->addWidget(lowerInput1);
-		lowerLayout->addWidget(lowerInput2);
-		layout.addLayout(lowerLayout);
+		// 从配置加载器获取默认值
+		QVariantMap settingDefaults = m_configLoader->getSettingDefaultValue(settingName);
+		// 设置标签
+		QLabel* settingLabel = new QLabel(settingLabels[i], &dialog);
+		settingLabel->setStyleSheet("QLabel { font-weight: bold; }");
+		gridLayout->addWidget(settingLabel, row, 0, 1, 2);
 
-		// 告警值标签
-		QLabel* alarmLabel = new QLabel(alarmLabels[i], &dialog);
-		layout.addWidget(alarmLabel);
+		// 趋势图y轴显示区域设置
+		QHBoxLayout* rangeLayout = new QHBoxLayout;
+		QLabel* rangeLabel = new QLabel("设置趋势图y轴显示区域（毫米）：", &dialog);
+		QLineEdit* rangeInput1 = new QLineEdit(&dialog);
+		rangeInput1->setValidator(new QDoubleValidator(0, 10000, 2, rangeInput1));
+		QLabel *separator = new QLabel(" --- ", &dialog);
+		QLineEdit* rangeInput2 = new QLineEdit(&dialog);
+		rangeInput2->setValidator(new QDoubleValidator(0, 10000, 2, rangeInput2));
+		QVariantList yAxisRange = settingDefaults["yAxisRange"].toList();
+		if (!yAxisRange.isEmpty()) {
+			rangeInput1->setText(QString::number(yAxisRange[0].toDouble(), 'f', 2));
+			rangeInput2->setText(QString::number(yAxisRange[1].toDouble(), 'f', 2));
+		}
 
-		// 告警值区域
+		rangeLayout->addWidget(rangeLabel);
+		rangeLayout->addWidget(rangeInput1);
+		rangeLayout->addWidget(separator);
+		rangeLayout->addWidget(rangeInput2);
+		gridLayout->addLayout(rangeLayout, row + 1, 0, 1, 2);
+
+		// 预警值设置
+		QHBoxLayout* warningLayout = new QHBoxLayout;
+		QLabel* warningLabel = new QLabel(QString("设置%1预警值（毫米）：").arg(settingLabels[i]), &dialog);
+		QLabel* greaterWarningLabel = new QLabel("大于", &dialog);
+		QLineEdit* greaterWarningInput = new QLineEdit(&dialog);
+		greaterWarningInput->setValidator(new QDoubleValidator(0, 10000, 2, greaterWarningInput));
+		QLabel* lessWarningLabel = new QLabel("或小于", &dialog);
+		QLineEdit* lessWarningInput = new QLineEdit(&dialog);
+		lessWarningInput->setValidator(new QDoubleValidator(0, 10000, 2, lessWarningInput));
+		QVariantList warningValue = settingDefaults["warningValue"].toList();
+		if (!warningValue.isEmpty()) {
+			greaterWarningInput->setText(QString::number(warningValue[0].toDouble(), 'f', 2));
+			lessWarningInput->setText(QString::number(warningValue[1].toDouble(), 'f', 2));
+		}
+
+		warningLayout->addWidget(warningLabel);
+		warningLayout->addWidget(greaterWarningLabel);
+		warningLayout->addWidget(greaterWarningInput);
+		warningLayout->addWidget(lessWarningLabel);
+		warningLayout->addWidget(lessWarningInput);
+		gridLayout->addLayout(warningLayout, row + 2, 0, 1, 2);
+
+		// 告警值设置
 		QHBoxLayout* alarmLayout = new QHBoxLayout;
-		QLabel* greaterLabel = new QLabel("大于", &dialog);
-		QLineEdit* greaterInput = new QLineEdit(&dialog);
-		greaterInput->setValidator(new QDoubleValidator(0, 10000, 2, greaterInput));
-		QLabel* lessLabel = new QLabel("或小于", &dialog);
-		QLineEdit* lessInput = new QLineEdit(&dialog);
-		lessInput->setValidator(new QDoubleValidator(0, 10000, 2, lessInput));
-		alarmLayout->addWidget(greaterLabel);
-		alarmLayout->addWidget(greaterInput);
-		alarmLayout->addWidget(lessLabel);
-		alarmLayout->addWidget(lessInput);
-		layout.addLayout(alarmLayout);
+		QLabel* alarmLabel = new QLabel(QString("设置%1告警值（毫米）：").arg(settingLabels[i]), &dialog);
+		QLabel* greaterAlarmLabel = new QLabel("大于", &dialog);
+		QLineEdit* greaterAlarmInput = new QLineEdit(&dialog);
+		greaterAlarmInput->setValidator(new QDoubleValidator(0, 10000, 2, greaterAlarmInput));
+		QLabel* lessAlarmLabel = new QLabel("或小于", &dialog);
+		QLineEdit* lessAlarmInput = new QLineEdit(&dialog);
+		lessAlarmInput->setValidator(new QDoubleValidator(0, 10000, 2, lessAlarmInput));
+
+		QVariantList alarmValue = settingDefaults["alarmValue"].toList();
+		if (!alarmValue.isEmpty()) {
+			greaterAlarmInput->setText(QString::number(alarmValue[0].toDouble(), 'f', 2));
+			lessAlarmInput->setText(QString::number(alarmValue[1].toDouble(), 'f', 2)); // 更正此处
+		}
+		alarmLayout->addWidget(alarmLabel);
+		alarmLayout->addWidget(greaterAlarmLabel);
+		alarmLayout->addWidget(greaterAlarmInput);
+		alarmLayout->addWidget(lessAlarmLabel);
+		alarmLayout->addWidget(lessAlarmInput);
+		gridLayout->addLayout(alarmLayout, row + 3, 0, 1, 2);
 	}
-	//QLabel warningLabel("设置A/B面左侧陶瓷宽度预警值（毫米）：", &dialog);
-	//layout.addWidget(&warningLabel);
 
-	//// 上限区域
-	//QHBoxLayout upperLayout;
-	//QLabel upperLabel("上限区域：", &dialog);
-	//QLineEdit upperInput1(&dialog);
-	//upperInput1.setValidator(new QDoubleValidator(0, 10000, 2, &upperInput1));
-	//QLineEdit upperInput2(&dialog);
-	//upperInput2.setValidator(new QDoubleValidator(0, 10000, 2, &upperInput2));
-	//upperLayout.addWidget(&upperLabel);
-	//upperLayout.addWidget(&upperInput1);
-	//upperLayout.addWidget(&upperInput2);
-	//layout.addLayout(&upperLayout);
 
-	//// 下限区域
-	//QHBoxLayout lowerLayout;
-	//QLabel lowerLabel("下限区域：", &dialog);
-	//QLineEdit lowerInput1(&dialog);
-	//lowerInput1.setValidator(new QDoubleValidator(0, 10000, 2, &lowerInput1));
-	//QLineEdit lowerInput2(&dialog);
-	//lowerInput2.setValidator(new QDoubleValidator(0, 10000, 2, &lowerInput2));
-	//lowerLayout.addWidget(&lowerLabel);
-	//lowerLayout.addWidget(&lowerInput1);
-	//lowerLayout.addWidget(&lowerInput2);
-	//layout.addLayout(&lowerLayout);
+	// 设置网格布局的间距和边距
+	gridLayout->setHorizontalSpacing(20);
+	gridLayout->setVerticalSpacing(10);
+	gridLayout->setContentsMargins(20, 20, 20, 20);
 
-	//// 设置A/B面左侧陶瓷宽度告警值（毫米）
-	//QLabel alarmLabel("设置A/B面左侧陶瓷宽度告警值（毫米）：", &dialog);
-	//layout.addWidget(&alarmLabel);
+	// 设置对话框的样式
+	dialog.setStyleSheet("QDialog { background-color: #f0f0f0; }"
+		"QLabel { font-size: 12pt; }"
+		"QLineEdit { border: 1px solid #999999; border-radius: 4px; padding: 2px; background-color: #ffffff; }"
+		"QPushButton { border: 2px solid #4a76a8; border-radius: 6px; background-color: #5a8bbf; padding: 5px; font-size: 10pt; color: white; min-width: 80px; }"
+		"QPushButton:hover { background-color: #6b9cd5; }"
+		"QPushButton:pressed { background-color: #487aa1; }");
 
-	//QHBoxLayout alarmLayout;
-	//QLabel greaterLabel("大于", &dialog);
-	//QLineEdit greaterInput(&dialog);
-	//greaterInput.setValidator(new QDoubleValidator(0, 10000, 2, &greaterInput));
-	//QLabel lessLabel("或小于", &dialog);
-	//QLineEdit lessInput(&dialog);
-	//lessInput.setValidator(new QDoubleValidator(0, 10000, 2, &lessInput));
-	//alarmLayout.addWidget(&greaterLabel);
-	//alarmLayout.addWidget(&greaterInput);
-	//alarmLayout.addWidget(&lessLabel);
-	//alarmLayout.addWidget(&lessInput);
-	//layout.addLayout(&alarmLayout);
+	// 其他布局和控件设置保持不变
 
-	QPushButton confirmButton("确认", &dialog);
-	connect(&confirmButton, &QPushButton::clicked, &dialog, &QDialog::accept);
-	layout.addWidget(&confirmButton);
+
+	// 创建确定和取消按钮
+	QPushButton *confirmButton = new QPushButton("确定", &dialog);
+	QPushButton *cancelButton = new QPushButton("取消", &dialog);
+
+
+	// 设置按钮的布局
+	QHBoxLayout *buttonLayout = new QHBoxLayout;
+	buttonLayout->addStretch(); // 添加弹性空间，使按钮靠右对齐
+	buttonLayout->addWidget(confirmButton);
+	buttonLayout->addSpacing(10); // 在两个按钮之间添加10像素的间距
+	buttonLayout->addWidget(cancelButton);
+
+
+	// 连接按钮的信号与槽
+	QObject::connect(confirmButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+	QObject::connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+	// 将按钮布局添加到网格布局的下方
+	gridLayout->addLayout(buttonLayout, settingLabels.size() * 4, 0, 1, 2); // 调整行位置以适应新的布局
+
+	// 设置网格布局的间距和边距
+	gridLayout->setHorizontalSpacing(30); // 增加水平间距
+	gridLayout->setVerticalSpacing(15); // 增加垂直间距
+	gridLayout->setContentsMargins(20, 20, 20, 20); // 设置布局的边距
+
+	// 将网格布局添加到对话框
+	dialog.setLayout(gridLayout);
+
 
 	// 显示对话框
 	if (dialog.exec() == QDialog::Accepted) {
@@ -320,8 +341,21 @@ void ChartManager::onIntervalPBClicked() {
 	}
 }
 
+QColor colorFromName(const QString &name) {
+	// 使用Qt的qHash函数生成一个基于字符串的哈希值
+	quint32 hashValue = qHash(name);
 
-void ChartManager::addCurve(const QString &curveName, const QColor &color) {
+	// 使用哈希值来生成颜色
+	int h = (hashValue % 360); // 色相值在0到359之间
+	int s = 200 + (hashValue % 55); // 饱和度在200到255之间
+	int v = 150 + (hashValue % 105); // 明度在150到255之间
+
+	return QColor::fromHsv(h, s, v);
+}
+
+
+
+void ChartManager::addCurve(const QString &curveName) {
 	QwtPlotCurve *curve = new QwtPlotCurve(curveName);
 	curve->setTitle(curveName); // 设置曲线的标题，这将在图例中显示
 		// 设置曲线标题的字体大小
@@ -331,6 +365,8 @@ void ChartManager::addCurve(const QString &curveName, const QColor &color) {
 	title.setFont(font);
 	curve->setTitle(title);
 
+
+	QColor color = colorFromName(curveName);
 	curve->setPen(color, 3); // 设置曲线颜色和宽度
 	curve->attach(plot);
 	curves.append(curve);
@@ -372,15 +408,52 @@ void ChartManager::installEventFilters() {
 }
 
 bool ChartManager::eventFilter(QObject *watched, QEvent *event) {
-	if (watched == plot->canvas() && event->type() == QEvent::MouseButtonPress) {
-		QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-		if (mouseEvent->button() == Qt::LeftButton) {
-			resetCurvesOpacity();
-			plot->replot();
-			return true; // 表示事件已处理
+	if (watched == plot->canvas()) {
+		switch (event->type()) {
+		case QEvent::MouseButtonPress: {
+			QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+			if (mouseEvent->button() == Qt::LeftButton) {
+				dragStartPosition = mouseEvent->pos();
+				xMinCurrent = plot->axisScaleDiv(QwtPlot::xBottom).lowerBound();
+				xMaxCurrent = plot->axisScaleDiv(QwtPlot::xBottom).upperBound();
+				isDragging = true;
+
+				resetCurvesOpacity();
+				plot->replot(); // 重绘图表以应用更改
+				//isViewingHistory = true; // 开始查看历史
+				return true;
+			}
+			else if (mouseEvent->button() == Qt::RightButton) {
+				// 当用户右键点击时，退出历史查看模式
+				isViewingHistory = false;
+			}
+			break;
+		}
+		case QEvent::MouseMove: {
+			if (isDragging) {
+				QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+				int dx = mouseEvent->pos().x() - dragStartPosition.x();
+				isViewingHistory = true;
+				double shift = (xMaxCurrent - xMinCurrent) * dx / plot->canvas()->width();
+				plot->setAxisScale(QwtPlot::xBottom, xMinCurrent - shift, xMaxCurrent - shift);
+				plot->replot();
+				return true;
+			}
+			break;
+		}
+		case QEvent::MouseButtonRelease: {
+			if (isDragging) {
+				isDragging = false;
+				//isViewingHistory = false; // 结束查看历史
+				return true;
+			}
+			break;
+		}
+		default:
+			break;
 		}
 	}
-	return QObject::eventFilter(watched, event); // 对于其他事件，调用基类的事件过滤器方法
+	return QObject::eventFilter(watched, event);
 }
 
 
@@ -397,8 +470,8 @@ void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
 
 		if (!curveExists) {
 			// 曲线不存在，创建新曲线
-			QColor color = QColor::fromHsv((curves.size() * 30) % 360, 255, 180); // 示例颜色
-			addCurve(curveName, color); // 假设这个方法已经实现
+			//QColor color = QColor::fromHsv((curves.size() * 30) % 360, 255, 180); // 示例颜色
+			addCurve(curveName); // 假设这个方法已经实现
 
 			// 更新ChartUpdaterThread中的曲线名称列表
 			QStringList updatedCurveNames;
@@ -407,17 +480,8 @@ void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
 			}
 			updaterThread->updateCurveNames(updatedCurveNames);
 
-			// 添加曲线名称到curveNames列表，用于表格列的同步
+			// 添加曲线名称到curveNames列表，用于其他同步操作
 			curveNames.append(curveName);
-
-			// 添加列到表格
-			int newColumnIndex = table->columnCount();
-			table->insertColumn(newColumnIndex);
-			table->setHorizontalHeaderItem(newColumnIndex, new QTableWidgetItem(curveName));
-			// 为已有行的新列填充默认值
-			for (int row = 0; row < table->rowCount(); ++row) {
-				table->setItem(row, newColumnIndex, new QTableWidgetItem("NaN"));
-			}
 		}
 	}
 	else {
@@ -436,12 +500,33 @@ void ChartManager::onCurveDisplayChanged(const QString &curveName, bool display)
 			updatedCurveNames.append(curve->title().text());
 		}
 		updaterThread->updateCurveNames(updatedCurveNames);
-		int columnIndex = curveNames.indexOf(curveName) + 1; // +1 因为第一列是固定的“位置(m)”
-		if (columnIndex > 0) {
-			table->removeColumn(columnIndex);
-			curveNames.removeAll(curveName); // 从曲线名称列表中移除
-		}
+		curveNames.removeAll(curveName); // 从曲线名称列表中移除
 	}
 
 	plot->replot(); // 重绘图表
+}
+
+
+
+void ChartManager::updateYAxisRange(const QVariantList &yAxisRange) {
+	if (yAxisRange.size() == 2) {
+		double minY = yAxisRange[0].toDouble();
+		double maxY = yAxisRange[1].toDouble();
+		plot->setAxisScale(QwtPlot::yLeft, minY, maxY);
+		plot->replot();
+	}
+}
+
+void ChartManager::updateWarningValue(const QVariantList &warningValue) {
+	if (warningValue.size() == 2) {
+		m_warningValueLower = warningValue[0].toDouble();
+		m_warningValueUpper = warningValue[1].toDouble();
+	}
+}
+
+void ChartManager::updateAlarmValue(const QVariantList &alarmValue) {
+	if (alarmValue.size() == 2) {
+		m_alarmValueLower = alarmValue[0].toDouble();
+		m_alarmValueUpper = alarmValue[1].toDouble();
+	}
 }

@@ -7,11 +7,11 @@
 
 class ChartDemo : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    ChartDemo(QWidget *parent = nullptr);
-    ~ChartDemo();
+	ChartDemo(QWidget *parent = nullptr);
+	~ChartDemo();
 
 
 
@@ -24,7 +24,7 @@ public slots:
 
 
 private:
-    Ui::lpTendencyClass ui;
+	Ui::lpTendencyClass ui;
 	ChartManager *chartManager;
 	ConfigLoader *configLoader;
 
