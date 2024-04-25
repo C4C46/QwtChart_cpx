@@ -34,6 +34,30 @@ QStringList ConfigLoader::getCurveNames() const {
 }
 
 
+QString ConfigLoader::getParentNameForCurve(const QString& curveName) const {
+	if (configDoc.isNull() || !configDoc.isObject()) {
+		return QString();
+	}
+
+	QJsonObject rootObj = configDoc.object();
+	QJsonArray categories = rootObj["categories"].toArray();
+
+	for (const QJsonValue& categoryVal : categories) {
+		QJsonObject categoryObj = categoryVal.toObject();
+		QString parentName = categoryObj["name"].toString();
+		QJsonArray children = categoryObj["children"].toArray();
+
+		for (const QJsonValue& childVal : children) {
+			QJsonObject childObj = childVal.toObject();
+			QString childName = childObj["name"].toString();
+			if (childName == curveName) {
+				return parentName; // 返回匹配曲线名称的父类名称
+			}
+		}
+	}
+
+	return QString(); // 如果没有找到匹配项，返回空字符串
+}
 
 QStringList ConfigLoader::getParentCategoryNames() const {
 	QStringList parentNames;

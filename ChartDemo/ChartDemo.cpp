@@ -61,7 +61,23 @@ void ChartDemo::handleIntervalPBClicked() {
 }
 void ChartDemo::updateData(const QString &curveName, double x, double y) {
 	qDebug() << "Updating data for" << curveName << "with X:" << x << "Y:" << y;
-	dataScope->addData(curveName, x, y); // 使用已有的addData函数来添加数据到表格
+
+	// 获取当前曲线所属的父类名称
+	QString parentName = configLoader->getParentNameForCurve(curveName);
+	// 获取该父类的设置默认值
+	QVariantMap settingDefaults = configLoader->getSettingDefaultValue(parentName);
+
+	QVariantList warningValue, alarmValue;
+	if (settingDefaults.contains("warningValue")) {
+		warningValue = settingDefaults["warningValue"].toList();
+	}
+	if (settingDefaults.contains("alarmValue")) {
+		alarmValue = settingDefaults["alarmValue"].toList();
+	}
+
+	// 使用已有的addData函数来添加数据到表格，并传递告警值和预警值范围
+	dataScope->addData(curveName, x, y, warningValue, alarmValue);
+
 
 		// 如果曲线被用户选中，则更新图表
 	if (configLoader->getCurveNames().contains(curveName)) {

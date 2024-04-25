@@ -29,6 +29,9 @@ public:
 	QString getSelectedParentNames() const;
 	QStringList getCurveNames() const; // 新增方法
 
+	QString getParentNameForCurve(const QString & curveName) const;//子类所属父类
+
+
 	QStringList getParentCategoryNames() const;
 signals:
 	void curveDisplayChanged(const QString &curveName, bool display);
